@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: infracost
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && pnpm build
+    startCommand: node .output/server/index.mjs
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: infracost-db
+          property: connectionString
+      - key: ANTHROPIC_ADMIN_API_KEY
+        sync: false
+      - key: RAILWAY_API_TOKEN
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false
+
+databases:
+  - name: infracost-db
+    plan: basic-256mb
+    databaseName: infracost
+    postgresMajorVersion: "16"
+    diskSizeGB: 1
