@@ -84,12 +84,16 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
       ),
     )
 
+  // Fixed costs (subscription, one_time) don't get projected — they're the full month amount
+  const isFixedCost = (costType: string) => costType === 'subscription' || costType === 'one_time'
+
   // Group by platform, then by service
-  const platformMap = new Map<number, PlatformCost>()
+  const platformMap = new Map<number, PlatformCost & { fixedMtd: number; usageMtd: number }>()
   const serviceMap = new Map<string, ServiceCost>() // key: platformId-serviceId
 
   for (const r of records) {
     const amt = parseFloat(r.amount || '0')
+    const fixed = isFixedCost(r.costType)
 
     // Ensure platform entry
     if (!platformMap.has(r.platformId)) {
@@ -104,11 +108,15 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
         eomEstimateEur: 0,
         recordCount: 0,
         services: [],
+        fixedMtd: 0,
+        usageMtd: 0,
       })
     }
     const platform = platformMap.get(r.platformId)!
     platform.mtd += amt
     platform.recordCount += 1
+    if (fixed) platform.fixedMtd += amt
+    else platform.usageMtd += amt
 
     // Aggregate by service within platform
     const svcKey = `${r.platformId}-${r.serviceId ?? 'none'}`
@@ -132,10 +140,12 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
   }
 
   // Attach services to platforms and compute EUR + EOM
+  // EOM = fixed costs as-is + usage costs projected
   const byPlatform: PlatformCost[] = []
   for (const [platformId, platform] of platformMap) {
     platform.mtdEur = toEur(platform.mtd)
-    platform.eomEstimate = progress > 0 ? platform.mtd / progress : 0
+    const usageProjected = progress > 0 ? platform.usageMtd / progress : 0
+    platform.eomEstimate = platform.fixedMtd + usageProjected
     platform.eomEstimateEur = toEur(platform.eomEstimate)
 
     // Collect services for this platform
@@ -154,7 +164,9 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
   byPlatform.sort((a, b) => b.mtd - a.mtd)
 
   const totalMTD = byPlatform.reduce((sum, p) => sum + p.mtd, 0)
-  const eomEstimate = progress > 0 ? totalMTD / progress : 0
+  const totalFixed = byPlatform.reduce((sum, p) => sum + (p as any).fixedMtd, 0)
+  const totalUsage = byPlatform.reduce((sum, p) => sum + (p as any).usageMtd, 0)
+  const eomEstimate = totalFixed + (progress > 0 ? totalUsage / progress : 0)
 
   // Get budget limit
   const budgetRows = await db

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, gte, lte } from 'drizzle-orm'
 import { platforms, services, costRecords, collectionRuns } from '../../db/schema'
 import { getCurrentMonthRange } from '../../collectors/base'
 import { createAnthropicCollector } from '../../collectors/anthropic'
@@ -68,8 +68,16 @@ export default defineEventHandler(async (event) => {
 
       const result = await collector.collect(start, end)
 
-      // Insert collected records
+      // Delete previous automated records for this platform+period to avoid duplicates
       if (result.records.length > 0) {
+        await db.delete(costRecords).where(
+          and(
+            eq(costRecords.platformId, platform.id),
+            gte(costRecords.periodStart, start),
+            lte(costRecords.periodEnd, end),
+            eq(costRecords.collectionMethod, platform.collectionMethod),
+          ),
+        )
         await db.insert(costRecords).values(result.records)
       }
 

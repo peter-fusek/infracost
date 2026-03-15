@@ -118,7 +118,12 @@ export default defineEventHandler(async () => {
     const estimate = parseFloat(svc.monthlyCostEstimate || '0')
     const actual = actualMap.get(`${svc.platformId}-${svc.id}`)
     const mtd = actual?.total ?? 0
-    const eom = progress > 0 ? mtd / progress : estimate
+    const isFixed = actual?.costType === 'subscription' || actual?.costType === 'one_time'
+      || svc.serviceType === 'subscription'
+    // Fixed costs: EOM = MTD (full month amount). Usage: project from progress.
+    const eom = mtd > 0
+      ? (isFixed ? mtd : (progress > 0 ? mtd / progress : mtd))
+      : estimate
 
     const svcBreakdown: ServiceBreakdown = {
       serviceId: svc.id,
