@@ -10,6 +10,15 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
   ],
   css: ['~/assets/css/main.css'],
+  nitro: {
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      // Run cost collection daily at 06:00 UTC
+      '0 6 * * *': ['collect'],
+    },
+  },
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || '',
     anthropicAdminApiKey: process.env.ANTHROPIC_ADMIN_API_KEY || '',
