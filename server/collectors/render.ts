@@ -6,10 +6,10 @@ import type { BaseCollector, CollectorResult, CostRecord } from './base'
  * Pricing verified against live Render billing 2026-03-14.
  *
  * Render hourly rates (always-on monthly equivalent):
- * - Free:     $0.0000/hr ($0/mo)
- * - Starter:  $0.0094/hr (~$6.85/mo)
- * - Standard: $0.0336/hr (~$24.50/mo)
- * - Pro:      $0.0800/hr (~$58.40/mo)
+ * - Free:     $0/mo
+ * - Starter:  ~$6.85/mo
+ * - Standard: ~$24.50/mo
+ * - Pro:      ~$58.40/mo
  * - Basic-256mb DB: ~$5.90/mo base
  * - DB storage: ~$0.29/mo per GB
  * - Static sites: $0
@@ -29,24 +29,36 @@ const RENDER_PRICING = {
   db_basic_256mb: 5.90,
   db_storage_per_gb: 0.29,
   cron_minimum: 0.29,
-  static_site: 0,
 }
 
 interface RenderService {
   id: string
   name: string
-  type: string // web_service, private_service, background_worker, cron_job, static_site, postgres
+  type: string
   serviceDetails?: {
     plan?: string
     region?: string
-    disk?: { sizeGB: number }
     env?: string
   }
-  // Also sometimes at top level
-  plan?: string
 }
 
-export function createRenderCollector(apiKey: string, platformId: number): BaseCollector {
+interface RenderPostgres {
+  id: string
+  name: string
+  plan: string
+  status: string
+  diskSizeGB?: number
+  databaseName?: string
+  region?: string
+}
+
+export function createRenderCollector(
+  apiKey: string,
+  platformId: number,
+  serviceMap?: Map<string, number>, // name → serviceId for linking
+): BaseCollector {
+  const headers = { Authorization: `Bearer ${apiKey}` }
+
   return {
     platformSlug: 'render',
 
@@ -54,22 +66,33 @@ export function createRenderCollector(apiKey: string, platformId: number): BaseC
       const records: CostRecord[] = []
       const errors: string[] = []
 
-      try {
-        // Fetch all services from Render API
-        const response = await fetch('https://api.render.com/v1/services?limit=50', {
-          headers: { Authorization: `Bearer ${apiKey}` },
-        })
+      function findServiceId(name: string): number | undefined {
+        return serviceMap?.get(name)
+      }
 
-        if (!response.ok) {
-          errors.push(`Render API error ${response.status}: ${await response.text()}`)
+      try {
+        // 1. Fetch web/static/cron services
+        const svcResponse = await fetch('https://api.render.com/v1/services?limit=50', { headers })
+        if (!svcResponse.ok) {
+          errors.push(`Render services API error ${svcResponse.status}: ${await svcResponse.text()}`)
           return { records, errors }
         }
+        const servicesData = await svcResponse.json() as Array<{ service: RenderService }>
 
-        const servicesData = await response.json() as Array<{ service: RenderService }>
+        // 2. Fetch PostgreSQL databases
+        const dbResponse = await fetch('https://api.render.com/v1/postgres?limit=50', { headers })
+        let databases: RenderPostgres[] = []
+        if (dbResponse.ok) {
+          const dbData = await dbResponse.json() as Array<{ postgres: RenderPostgres }>
+          databases = dbData.map(d => d.postgres)
+        } else {
+          errors.push(`Render postgres API error ${dbResponse.status} — databases not collected`)
+        }
 
         // Professional plan (fixed monthly)
         records.push({
           platformId,
+          serviceId: findServiceId('Professional Plan'),
           recordDate: new Date(),
           periodStart,
           periodEnd,
@@ -81,50 +104,36 @@ export function createRenderCollector(apiKey: string, platformId: number): BaseC
           notes: 'Render Professional plan (1 seat)',
         })
 
-        // Calculate costs per service based on known pricing
+        // Price each service
         for (const { service } of servicesData) {
           let cost = 0
           let costType: CostRecord['costType'] = 'subscription'
           let notes = ''
+          const plan = (service.serviceDetails?.plan ?? '').toLowerCase()
 
-          // Get plan from serviceDetails or top-level
-          const plan = (service.serviceDetails?.plan ?? service.plan ?? '').toLowerCase()
-
-          if (service.type === 'postgres') {
-            // DB pricing: base instance + storage
-            const diskGB = service.serviceDetails?.disk?.sizeGB || 1
-            cost = RENDER_PRICING.db_basic_256mb + (diskGB * RENDER_PRICING.db_storage_per_gb)
-            notes = `PostgreSQL: Basic-256mb + ${diskGB}GB disk`
-          }
-          else if (service.type === 'static_site') {
+          if (service.type === 'static_site') {
             cost = 0
             notes = 'Static site (free)'
           }
           else if (service.type === 'cron_job') {
             cost = RENDER_PRICING.cron_minimum
             costType = 'usage'
-            notes = 'Cron job (minimum charge)'
+            notes = `Cron job: ${plan} plan`
           }
           else if (plan && PLAN_MONTHLY_COST[plan] !== undefined) {
-            // Web service / private service / background worker with known plan
             cost = PLAN_MONTHLY_COST[plan]
             costType = cost === 0 ? 'usage' : 'subscription'
             notes = `${service.type}: ${plan} plan`
           }
-          else if (plan === '' || plan === 'free') {
-            cost = 0
-            costType = 'usage'
-            notes = 'Free tier'
-          }
           else {
-            // Unknown plan — log it and estimate as Starter
             cost = PLAN_MONTHLY_COST.starter
-            notes = `${service.type}: unknown plan "${plan}" (estimated as Starter)`
-            errors.push(`Render: unknown plan "${plan}" for ${service.name} — estimated as Starter $6.85/mo`)
+            notes = `${service.type}: unknown plan "${plan}" (est. Starter)`
+            errors.push(`Render: unknown plan "${plan}" for ${service.name}`)
           }
 
           records.push({
             platformId,
+            serviceId: findServiceId(service.name),
             recordDate: new Date(),
             periodStart,
             periodEnd,
@@ -132,8 +141,28 @@ export function createRenderCollector(apiKey: string, platformId: number): BaseC
             currency: 'USD',
             costType,
             collectionMethod: 'hybrid',
-            rawData: { service },
+            rawData: { serviceId: service.id, type: service.type, plan },
             notes: `${service.name}: ${notes}`,
+          })
+        }
+
+        // Price each database
+        for (const db of databases) {
+          const diskGB = db.diskSizeGB || 1
+          const cost = RENDER_PRICING.db_basic_256mb + (diskGB * RENDER_PRICING.db_storage_per_gb)
+
+          records.push({
+            platformId,
+            serviceId: findServiceId(db.name),
+            recordDate: new Date(),
+            periodStart,
+            periodEnd,
+            amount: cost.toFixed(2),
+            currency: 'USD',
+            costType: 'subscription',
+            collectionMethod: 'hybrid',
+            rawData: { postgresId: db.id, diskSizeGB: diskGB, plan: db.plan, status: db.status },
+            notes: `${db.name}: PostgreSQL ${db.plan || 'basic-256mb'} + ${diskGB}GB disk`,
           })
         }
       }

@@ -14,6 +14,7 @@
     "drizzle-orm": "^0.45.1",
     "nuxt": "^4.3.1",
     "pg": "^8.20.0",
+    "tailwindcss": "^4.2.1",
     "vue": "latest"
   },
   "devDependencies": {

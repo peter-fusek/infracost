@@ -54,13 +54,16 @@ export default defineEventHandler(async (event) => {
           }
           collector = createRailwayCollector(config.railwayApiToken, platform.id, apiServiceId)
           break
-        case 'render':
+        case 'render': {
           if (!config.renderApiKey) {
             results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
             continue
           }
-          collector = createRenderCollector(config.renderApiKey, platform.id)
+          // Build name→serviceId map for linking records to services
+          const svcMap = new Map(platformServices.map(s => [s.name, s.id]))
+          collector = createRenderCollector(config.renderApiKey, platform.id, svcMap)
           break
+        }
         default:
           results.push({ platform: platform.slug, records: 0, errors: [`No collector implemented for ${platform.slug}`] })
           continue

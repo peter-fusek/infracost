@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/eslint',
   ],
+  css: ['~/assets/css/main.css'],
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || '',
     anthropicAdminApiKey: process.env.ANTHROPIC_ADMIN_API_KEY || '',
