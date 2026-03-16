@@ -77,7 +77,7 @@ export const serviceSeed = [
 
 // Default global budget — updated to reflect actual ~$475/mo spend
 export const budgetSeed = [
-  { name: 'Total Infrastructure', platformId: null, monthlyLimit: '500.00' },
+  { name: 'Total Infrastructure', platformId: null, monthlyLimit: '550.00' },
 ]
 
 // Optimization opportunities — from March 2026 audit
