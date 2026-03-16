@@ -1,9 +1,9 @@
 import type { BaseCollector, CollectorResult, CostRecord } from './base'
 
 /**
- * Turso collector — checks database usage via API.
- * Free tier: 9 GiB total storage, 500 databases, 25 billion rows read/mo.
- * API docs: https://docs.turso.tech/api-reference
+ * Turso collector — fetches database usage via API.
+ * Free tier: 500M rows read/mo, 10M rows written/mo, 5GB storage.
+ * API: https://docs.turso.tech/api-reference
  */
 export function createTursoCollector(apiKey: string, platformId: number): BaseCollector {
   return {
@@ -14,31 +14,45 @@ export function createTursoCollector(apiKey: string, platformId: number): BaseCo
       const errors: string[] = []
 
       try {
-        // List databases to verify key
-        const response = await fetch('https://api.turso.tech/v1/organizations', {
+        // Get organizations
+        const orgResponse = await fetch('https://api.turso.tech/v1/organizations', {
           headers: { Authorization: `Bearer ${apiKey}` },
         })
 
-        if (!response.ok) {
-          errors.push(`Turso API error ${response.status}: ${await response.text()}`)
+        if (!orgResponse.ok) {
+          errors.push(`Turso API error ${orgResponse.status}: ${await orgResponse.text()}`)
           return { records, errors }
         }
 
-        const orgs = await response.json() as Array<{ slug: string; name: string }>
+        const orgs = await orgResponse.json() as Array<{ slug: string; name: string }>
         const orgSlug = orgs[0]?.slug
-
-        let dbCount = 0
-        if (orgSlug) {
-          const dbResponse = await fetch(`https://api.turso.tech/v1/organizations/${orgSlug}/databases`, {
-            headers: { Authorization: `Bearer ${apiKey}` },
-          })
-          if (dbResponse.ok) {
-            const dbData = await dbResponse.json() as { databases: Array<{ name: string }> }
-            dbCount = dbData.databases?.length ?? 0
-          }
+        if (!orgSlug) {
+          errors.push('Turso: no organizations found')
+          return { records, errors }
         }
 
-        // Turso free tier — $0
+        // Get org-level usage
+        const usageResponse = await fetch(`https://api.turso.tech/v1/organizations/${orgSlug}/usage`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        })
+
+        let usageData: Record<string, unknown> = {}
+        if (usageResponse.ok) {
+          usageData = await usageResponse.json()
+        }
+
+        // Get databases
+        const dbResponse = await fetch(`https://api.turso.tech/v1/organizations/${orgSlug}/databases`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        })
+
+        let dbCount = 0
+        if (dbResponse.ok) {
+          const dbData = await dbResponse.json() as { databases: Array<{ name: string }> }
+          dbCount = dbData.databases?.length ?? 0
+        }
+
+        // Free tier — $0 cost but track usage metrics
         records.push({
           platformId,
           recordDate: new Date(),
@@ -48,8 +62,8 @@ export function createTursoCollector(apiKey: string, platformId: number): BaseCo
           currency: 'USD',
           costType: 'usage',
           collectionMethod: 'api',
-          rawData: { org: orgSlug, databases: dbCount },
-          notes: `Turso: ${dbCount} database(s) in org "${orgSlug}", free tier`,
+          rawData: { org: orgSlug, databases: dbCount, usage: usageData },
+          notes: `Turso: ${dbCount} database(s) in "${orgSlug}", free tier`,
         })
       }
       catch (err) {
