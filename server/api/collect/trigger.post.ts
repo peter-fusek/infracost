@@ -155,7 +155,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check budget alerts after collection
-  const newAlerts = await checkBudgetAlerts(db)
+  const newAlerts = await checkBudgetAlerts(db, config as unknown as Record<string, string>)
 
   return { collected: results, period: { start, end }, alerts: newAlerts }
 })

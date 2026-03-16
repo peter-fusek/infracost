@@ -2,6 +2,26 @@ import { and, eq, isNull, gte } from 'drizzle-orm'
 import { budgets, alerts } from '../db/schema'
 import { getMTDSummary } from './cost-aggregation'
 
+async function sendAlertEmail(message: string, severity: string, config: Record<string, string>) {
+  if (!config.resendApiKey) return
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'InfraCost <alerts@contactrefiner.com>',
+        to: ['peterfusek1980@gmail.com'],
+        subject: `[InfraCost ${severity.toUpperCase()}] ${message.substring(0, 80)}`,
+        text: message,
+      }),
+    })
+  }
+  catch { /* email send failed silently */ }
+}
+
 const THRESHOLDS = [
   { pct: 100, severity: 'critical' as const, label: 'exceeded' },
   { pct: 90, severity: 'warning' as const, label: 'at 90%' },
@@ -9,7 +29,7 @@ const THRESHOLDS = [
   { pct: 50, severity: 'info' as const, label: 'at 50%' },
 ]
 
-export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/db').useDB>) {
+export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/db').useDB>, config?: Record<string, string>) {
   const summary = await getMTDSummary(db)
   const newAlerts: Array<{ severity: string; message: string; budgetId: number }> = []
 
@@ -61,6 +81,11 @@ export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/d
         budgetId: budget.id,
       })
       newAlerts.push({ severity: threshold.severity, message, budgetId: budget.id })
+
+      // Send email for warning and critical alerts
+      if (config && (threshold.severity === 'warning' || threshold.severity === 'critical')) {
+        await sendAlertEmail(message, threshold.severity, config)
+      }
 
       // Only create the highest threshold alert, not all lower ones
       break
