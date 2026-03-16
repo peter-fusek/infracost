@@ -14,6 +14,7 @@ export const platformSeed = [
   { slug: 'gcp', name: 'Google Cloud', type: 'cloud', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'websupport', name: 'Websupport', type: 'domain', collectionMethod: 'manual' as const, billingCycle: 'annual' },
   { slug: 'github-actions', name: 'GitHub Actions', type: 'ci_cd', collectionMethod: 'api' as const, billingCycle: 'usage' },
+  { slug: 'uptimerobot', name: 'UptimeRobot', type: 'monitoring', collectionMethod: 'api' as const, billingCycle: 'monthly', apiConfigKey: 'uptimeRobotApiKey' },
 ] as const
 
 // Service seed data — known services from our infrastructure
@@ -73,6 +74,9 @@ export const serviceSeed = [
 
   // Turso
   { platformSlug: 'turso', name: 'oncofiles-db', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: null },
+
+  // UptimeRobot
+  { platformSlug: 'uptimerobot', name: 'Monitoring (5 monitors)', project: null, serviceType: 'monitoring', monthlyCostEstimate: '0.00' },
 ]
 
 // Default global budget — updated to reflect actual ~$475/mo spend

@@ -27,6 +27,7 @@ export default defineNuxtConfig({
     resendApiKey: process.env.RESEND_API_KEY || '',
     neonApiKey: process.env.NEON_API_KEY || '',
     tursoApiToken: process.env.TURSO_API_TOKEN || '',
+    uptimeRobotApiKey: process.env.UPTIMEROBOT_API_KEY || '',
     public: {
       eurUsdRate: 0.92, // EUR per 1 USD — update monthly
     },

@@ -8,6 +8,7 @@ import { createRailwayCollector } from '../../collectors/railway'
 import { createRenderCollector } from '../../collectors/render'
 import { createResendCollector } from '../../collectors/resend'
 import { createTursoCollector } from '../../collectors/turso'
+import { createUptimeRobotCollector } from '../../collectors/uptimerobot'
 import { checkBudgetAlerts } from '../../services/budget-alerts'
 
 export default defineEventHandler(async (event) => {
@@ -92,6 +93,13 @@ export default defineEventHandler(async (event) => {
           break
         case 'gcp':
           collector = createGcpCollector('', platform.id, apiServiceId)
+          break
+        case 'uptimerobot':
+          if (!config.uptimeRobotApiKey) {
+            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
+            continue
+          }
+          collector = createUptimeRobotCollector(config.uptimeRobotApiKey, platform.id)
           break
         default:
           results.push({ platform: platform.slug, records: 0, errors: [`No collector implemented for ${platform.slug}`] })

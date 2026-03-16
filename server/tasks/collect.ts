@@ -8,6 +8,7 @@ import { createRailwayCollector } from '../collectors/railway'
 import { createRenderCollector } from '../collectors/render'
 import { createResendCollector } from '../collectors/resend'
 import { createTursoCollector } from '../collectors/turso'
+import { createUptimeRobotCollector } from '../collectors/uptimerobot'
 import { checkBudgetAlerts } from '../services/budget-alerts'
 
 export default defineTask({
@@ -65,6 +66,10 @@ export default defineTask({
             break
           case 'gcp':
             collector = createGcpCollector('', platform.id, apiServiceId)
+            break
+          case 'uptimerobot':
+            if (!config.uptimeRobotApiKey) continue
+            collector = createUptimeRobotCollector(config.uptimeRobotApiKey, platform.id)
             break
           default:
             continue

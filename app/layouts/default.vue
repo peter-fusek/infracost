@@ -4,6 +4,7 @@ const navigation = [
   { label: 'Breakdown', icon: 'i-lucide-list-tree', to: '/breakdown' },
   { label: 'Trends', icon: 'i-lucide-trending-up', to: '/trends' },
   { label: 'Optimizations', icon: 'i-lucide-lightbulb', to: '/optimizations' },
+  { label: 'Status', icon: 'i-lucide-activity', to: '/status' },
   { label: 'Platforms', icon: 'i-lucide-server', to: '/platforms' },
   { label: 'Manual Entry', icon: 'i-lucide-pencil', to: '/manual' },
 ]
