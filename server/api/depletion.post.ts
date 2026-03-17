@@ -38,13 +38,23 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { platform, balance } = body as { platform: string; balance: number }
 
-  if (!platform || balance === undefined) {
+  if (!platform || typeof platform !== 'string' || balance === undefined) {
     throw createError({ statusCode: 400, message: 'platform and balance required' })
+  }
+
+  const allowedPlatforms = ['railway', 'anthropic', 'render', 'neon', 'turso', 'resend', 'gcp', 'uptimerobot', 'websupport', 'claude-max']
+  if (!allowedPlatforms.includes(platform)) {
+    throw createError({ statusCode: 400, message: `platform must be one of: ${allowedPlatforms.join(', ')}` })
+  }
+
+  const numBalance = Number(balance)
+  if (!Number.isFinite(numBalance) || numBalance < 0) {
+    throw createError({ statusCode: 400, message: 'balance must be a non-negative number' })
   }
 
   const balances = await getBalances()
   balances[platform] = {
-    balance: Number(balance),
+    balance: numBalance,
     updatedAt: new Date().toISOString().split('T')[0],
   }
   await saveBalances(balances)

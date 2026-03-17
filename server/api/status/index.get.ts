@@ -2,7 +2,7 @@
 export default defineEventHandler(async () => {
   const config = useRuntimeConfig()
   if (!config.uptimeRobotApiKey) {
-    return { error: 'UPTIMEROBOT_API_KEY not configured', monitors: [] }
+    throw createError({ statusCode: 503, message: 'UPTIMEROBOT_API_KEY not configured' })
   }
 
   const response = await fetch('https://api.uptimerobot.com/v2/getMonitors', {
@@ -18,7 +18,7 @@ export default defineEventHandler(async () => {
   })
 
   if (!response.ok) {
-    return { error: `UptimeRobot API ${response.status}`, monitors: [] }
+    throw createError({ statusCode: 502, message: `UptimeRobot API returned ${response.status}` })
   }
 
   const data = await response.json() as {
@@ -35,7 +35,7 @@ export default defineEventHandler(async () => {
   }
 
   if (data.stat !== 'ok') {
-    return { error: 'UptimeRobot API error', monitors: [] }
+    throw createError({ statusCode: 502, message: 'UptimeRobot API returned an error' })
   }
 
   const statusMap: Record<number, string> = {

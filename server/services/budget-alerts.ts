@@ -19,7 +19,9 @@ async function sendAlertEmail(message: string, severity: string, config: Record<
       }),
     })
   }
-  catch { /* email send failed silently */ }
+  catch (err) {
+    console.error('[budget-alerts] Email send failed:', err instanceof Error ? err.message : err)
+  }
 }
 
 async function sendWhatsApp(message: string, config: Record<string, string>) {
@@ -33,7 +35,9 @@ async function sendWhatsApp(message: string, config: Record<string, string>) {
     const encoded = encodeURIComponent(message)
     await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encoded}&apikey=${apikey}`)
   }
-  catch { /* WhatsApp send failed silently */ }
+  catch (err) {
+    console.error('[budget-alerts] WhatsApp send failed:', err instanceof Error ? err.message : err)
+  }
 }
 
 const THRESHOLDS = [

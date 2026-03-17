@@ -69,7 +69,9 @@ export async function detectDrift(db: ReturnType<typeof import('../utils/db').us
         }
       }
     }
-    catch { /* skip on error */ }
+    catch (err) {
+      console.error('[drift-detector] Render check failed:', err instanceof Error ? err.message : err)
+    }
   }
 
   // Check Railway projects
@@ -110,7 +112,9 @@ export async function detectDrift(db: ReturnType<typeof import('../utils/db').us
         }
       }
     }
-    catch { /* skip on error */ }
+    catch (err) {
+      console.error('[drift-detector] Railway check failed:', err instanceof Error ? err.message : err)
+    }
   }
 
   return drifts

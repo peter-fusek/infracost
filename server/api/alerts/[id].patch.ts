@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { alerts } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = parseId(getRouterParam(event, 'id'))
   const body = await readBody(event)
   const db = useDB()
 
@@ -21,6 +21,10 @@ export default defineEventHandler(async (event) => {
     .set(updates)
     .where(eq(alerts.id, id))
     .returning()
+
+  if (!updated) {
+    throw createError({ statusCode: 404, message: 'Alert not found' })
+  }
 
   return updated
 })

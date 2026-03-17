@@ -5,9 +5,14 @@ export default defineEventHandler(async (event) => {
   const db = useDB()
   const body = await readBody(event)
 
-  // Validate required fields
-  if (!body.platformSlug || !body.amount) {
+  if (!body.platformSlug || body.amount === undefined) {
     throw createError({ statusCode: 400, message: 'platformSlug and amount are required' })
+  }
+
+  const amt = parseAmount(body.amount)
+
+  if (body.costType) {
+    validateCostType(body.costType)
   }
 
   // Look up platform
@@ -42,7 +47,7 @@ export default defineEventHandler(async (event) => {
     recordDate,
     periodStart,
     periodEnd,
-    amount: String(body.amount),
+    amount: String(amt),
     currency: body.currency || 'USD',
     costType: body.costType || 'usage',
     collectionMethod: 'manual',

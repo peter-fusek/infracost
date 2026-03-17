@@ -2,13 +2,18 @@ import { eq } from 'drizzle-orm'
 import { costRecords } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = parseId(getRouterParam(event, 'id'))
   const body = await readBody(event)
   const db = useDB()
 
   const updates: Record<string, unknown> = {}
-  if (body.costType) updates.costType = body.costType
-  if (body.amount !== undefined) updates.amount = String(body.amount)
+  if (body.costType) {
+    validateCostType(body.costType)
+    updates.costType = body.costType
+  }
+  if (body.amount !== undefined) {
+    updates.amount = String(parseAmount(body.amount))
+  }
   if (body.notes !== undefined) updates.notes = body.notes
 
   if (Object.keys(updates).length === 0) {
