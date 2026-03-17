@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { loggedIn, user, clear: logout } = useUserSession()
+
 const navigation = [
   { label: 'Overview', icon: 'i-lucide-layout-dashboard', to: '/' },
   { label: 'Breakdown', icon: 'i-lucide-list-tree', to: '/breakdown' },
@@ -29,6 +31,14 @@ const navigation = [
                 size="sm"
               />
             </nav>
+          </div>
+          <div class="flex items-center gap-2">
+            <template v-if="loggedIn">
+              <UAvatar v-if="user?.picture" :src="user.picture" size="xs" />
+              <span class="text-sm text-[var(--ui-text-muted)]">{{ user?.name || user?.email }}</span>
+              <UButton label="Logout" variant="ghost" size="xs" @click="logout()" />
+            </template>
+            <UButton v-else label="Login" icon="i-lucide-log-in" variant="soft" size="sm" to="/auth/google" external />
           </div>
         </div>
       </div>

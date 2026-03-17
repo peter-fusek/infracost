@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/ui',
     '@nuxt/eslint',
+    'nuxt-auth-utils',
   ],
   css: ['~/assets/css/main.css'],
   nitro: {
@@ -20,6 +21,16 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    allowedEmails: process.env.ALLOWED_EMAILS || '',
+    session: {
+      password: process.env.NUXT_SESSION_PASSWORD || '',
+    },
+    oauth: {
+      google: {
+        clientId: process.env.NUXT_OAUTH_GOOGLE_CLIENT_ID || '',
+        clientSecret: process.env.NUXT_OAUTH_GOOGLE_CLIENT_SECRET || '',
+      },
+    },
     databaseUrl: process.env.DATABASE_URL || '',
     anthropicAdminApiKey: process.env.ANTHROPIC_ADMIN_API_KEY || '',
     railwayApiToken: process.env.RAILWAY_API_TOKEN || '',
