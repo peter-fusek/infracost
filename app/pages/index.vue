@@ -2,8 +2,8 @@
 useSeoMeta({
   title: 'InfraCost — Track All Your Infrastructure Costs in One Dashboard',
   ogTitle: 'InfraCost — Track All Your Infrastructure Costs in One Dashboard',
-  description: 'Track spending across 9 cloud and AI platforms — Render, Railway, Anthropic, Neon, Turso and more — with budget alerts, drift detection, and depletion forecasts. USD + EUR.',
-  ogDescription: 'Automated cost tracking across Render, Railway, Anthropic API, Neon, Turso, Resend, UptimeRobot, GCP. Budget alerts, depletion forecasts, drift detection.',
+  description: 'Track spending across 9 cloud and AI platforms — Render, Railway, Anthropic, Neon, Turso and more — with budget alerts, drift detection, depletion forecasts, and collection freshness tracking. USD + EUR.',
+  ogDescription: 'Automated cost tracking across Render, Railway, Anthropic API, Neon, Turso, Resend, UptimeRobot, GCP. Budget alerts, depletion forecasts, drift detection. Secured with Google OAuth.',
   ogType: 'website',
   ogSiteName: 'InfraCost',
   ogUrl: 'https://infracost.eu',
@@ -126,6 +126,16 @@ const features = [
     title: 'Drift Detection',
     description: 'Compares live API service lists against your inventory daily. New services, removed services, and status changes surfaced automatically.',
   },
+  {
+    icon: 'i-lucide-activity',
+    title: 'Collection Freshness',
+    description: 'Every platform shows when data was last collected with green/yellow/red status indicators. Know instantly if any collector is stale or failing.',
+  },
+  {
+    icon: 'i-lucide-shield-check',
+    title: 'Secured by Default',
+    description: 'Google OAuth with email allowlist protects all write operations. Read-only dashboard stays public. All API calls timeout-protected with 15s limits.',
+  },
 ]
 
 const platforms = [
@@ -152,7 +162,7 @@ const platforms = [
           <span class="text-[var(--ui-primary)]">One dashboard.</span>
         </h1>
         <p class="mx-auto mt-4 max-w-2xl text-lg text-[var(--ui-text-muted)] sm:mt-6">
-          Automated cost tracking across 9 cloud and AI platforms. Budget alerts before you overspend. Depletion forecasts before your credits run dry. USD and EUR.
+          Automated cost tracking across 9 cloud and AI platforms. Budget alerts before you overspend. Depletion forecasts before your credits run dry. Collection freshness you can trust. USD and EUR.
         </p>
         <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <UButton
@@ -184,7 +194,7 @@ const platforms = [
     </section>
 
     <!-- Feature Cards -->
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <UCard v-for="feature in features" :key="feature.title">
         <div class="flex gap-4">
           <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--ui-primary)]/10">
