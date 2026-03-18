@@ -1,1 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /manual
 
+Sitemap: https://infracost.eu/sitemap.xml

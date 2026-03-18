@@ -11,6 +11,15 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
   ],
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      link: [
+        { rel: 'canonical', href: 'https://infracost.eu' },
+      ],
+      // GA4 measurement tag — will be set after registration
+      // script: [{ src: 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX', async: true }],
+    },
+  },
   nitro: {
     experimental: {
       tasks: true,
