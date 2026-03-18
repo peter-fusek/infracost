@@ -5,10 +5,47 @@ import { getCurrentMonthRange, getMonthProgress } from '../../collectors/base'
 const EUR_USD_RATE = 0.92
 function toEur(usd: number) { return Math.round(usd * EUR_USD_RATE * 100) / 100 }
 
-export default defineEventHandler(async () => {
+interface ServiceBreakdown {
+  serviceId: number
+  name: string
+  project: string | null
+  platformName: string
+  platformSlug: string
+  platformType: string
+  serviceType: string
+  estimateUsd: number
+  estimateEur: number
+  actualMtdUsd: number
+  actualMtdEur: number
+  eomUsd: number
+  eomEur: number
+  costType: string
+  collectionMethod: string
+  recordCount: number
+  variance: number
+}
+
+interface GroupBreakdown {
+  key: string // platform slug or project name
+  label: string
+  type: string // platform type or 'project'
+  totalEstimateUsd: number
+  totalEstimateEur: number
+  totalActualMtdUsd: number
+  totalActualMtdEur: number
+  totalEomUsd: number
+  totalEomEur: number
+  lastCollectedAt: string | null
+  lastRunStatus: string | null
+  services: ServiceBreakdown[]
+}
+
+export default defineEventHandler(async (event) => {
   const db = useDB()
   const { start, end } = getCurrentMonthRange()
   const progress = getMonthProgress()
+  const query = getQuery(event)
+  const groupBy = (query.groupBy as string) || 'platform'
 
   // Get all services with their seed estimates
   const allServices = await db
@@ -76,50 +113,75 @@ export default defineEventHandler(async () => {
     }
   }
 
-  // Build breakdown grouped by platform
-  interface ServiceBreakdown {
-    serviceId: number
-    name: string
-    project: string | null
-    serviceType: string
-    estimateUsd: number
-    estimateEur: number
-    actualMtdUsd: number
-    actualMtdEur: number
-    eomUsd: number
-    eomEur: number
-    costType: string
-    collectionMethod: string
-    recordCount: number
-    variance: number // eom vs estimate, negative = under budget
-  }
-
-  interface PlatformBreakdown {
-    platformId: number
-    slug: string
-    name: string
-    type: string
-    totalEstimateUsd: number
-    totalEstimateEur: number
-    totalActualMtdUsd: number
-    totalActualMtdEur: number
-    totalEomUsd: number
-    totalEomEur: number
-    lastCollectedAt: string | null
-    lastRunStatus: string | null
-    services: ServiceBreakdown[]
-  }
-
-  const platformGroups = new Map<number, PlatformBreakdown>()
+  // Build service breakdowns
+  const allSvcBreakdowns: ServiceBreakdown[] = []
+  const platformCostExtras = new Map<number, number>() // platform-level costs
 
   for (const svc of allServices) {
-    if (!platformGroups.has(svc.platformId)) {
-      const run = runMap.get(svc.platformId) as { completed_at: string | null; status: string } | undefined
-      platformGroups.set(svc.platformId, {
-        platformId: svc.platformId,
-        slug: svc.platformSlug,
-        name: svc.platformName,
-        type: svc.platformType,
+    const estimate = parseFloat(svc.monthlyCostEstimate || '0')
+    const actual = actualMap.get(`${svc.platformId}-${svc.id}`)
+    const mtd = actual?.total ?? 0
+    const isFixed = actual?.costType === 'subscription' || actual?.costType === 'one_time'
+      || svc.serviceType === 'subscription'
+    const eom = mtd > 0
+      ? (isFixed ? mtd : (progress > 0 ? mtd / progress : mtd))
+      : estimate
+
+    allSvcBreakdowns.push({
+      serviceId: svc.id,
+      name: svc.name,
+      project: svc.project,
+      platformName: svc.platformName,
+      platformSlug: svc.platformSlug,
+      platformType: svc.platformType,
+      serviceType: svc.serviceType,
+      estimateUsd: estimate,
+      estimateEur: toEur(estimate),
+      actualMtdUsd: Math.round(mtd * 100) / 100,
+      actualMtdEur: toEur(mtd),
+      eomUsd: Math.round(eom * 100) / 100,
+      eomEur: toEur(eom),
+      costType: actual?.costType ?? 'usage',
+      collectionMethod: actual?.method ?? 'manual',
+      recordCount: actual?.count ?? 0,
+      variance: estimate > 0 ? Math.round((eom - estimate) * 100) / 100 : 0,
+    })
+  }
+
+  // Platform-level costs without service assignment
+  for (const a of actuals) {
+    if (a.serviceId === null) {
+      const total = parseFloat(a.total || '0')
+      platformCostExtras.set(a.platformId, (platformCostExtras.get(a.platformId) ?? 0) + total)
+    }
+  }
+
+  // Group services by the chosen dimension
+  const groups = new Map<string, GroupBreakdown>()
+
+  for (const svc of allSvcBreakdowns) {
+    let groupKey: string
+    let label: string
+    let type: string
+
+    if (groupBy === 'project') {
+      groupKey = svc.project || 'Unassigned'
+      label = groupKey
+      type = 'project'
+    } else {
+      groupKey = svc.platformSlug
+      label = svc.platformName
+      type = svc.platformType
+    }
+
+    if (!groups.has(groupKey)) {
+      const run = groupBy === 'platform'
+        ? runMap.get(allServices.find(s => s.platformSlug === groupKey)?.platformId ?? -1) as { completed_at: string | null; status: string } | undefined
+        : undefined
+      groups.set(groupKey, {
+        key: groupKey,
+        label,
+        type,
         totalEstimateUsd: 0,
         totalEstimateEur: 0,
         totalActualMtdUsd: 0,
@@ -132,62 +194,35 @@ export default defineEventHandler(async () => {
       })
     }
 
-    const pg = platformGroups.get(svc.platformId)!
-    const estimate = parseFloat(svc.monthlyCostEstimate || '0')
-    const actual = actualMap.get(`${svc.platformId}-${svc.id}`)
-    const mtd = actual?.total ?? 0
-    const isFixed = actual?.costType === 'subscription' || actual?.costType === 'one_time'
-      || svc.serviceType === 'subscription'
-    // Fixed costs: EOM = MTD (full month amount). Usage: project from progress.
-    const eom = mtd > 0
-      ? (isFixed ? mtd : (progress > 0 ? mtd / progress : mtd))
-      : estimate
-
-    const svcBreakdown: ServiceBreakdown = {
-      serviceId: svc.id,
-      name: svc.name,
-      project: svc.project,
-      serviceType: svc.serviceType,
-      estimateUsd: estimate,
-      estimateEur: toEur(estimate),
-      actualMtdUsd: Math.round(mtd * 100) / 100,
-      actualMtdEur: toEur(mtd),
-      eomUsd: Math.round(eom * 100) / 100,
-      eomEur: toEur(eom),
-      costType: actual?.costType ?? 'usage',
-      collectionMethod: actual?.method ?? 'manual',
-      recordCount: actual?.count ?? 0,
-      variance: estimate > 0 ? Math.round((eom - estimate) * 100) / 100 : 0,
-    }
-
-    pg.services.push(svcBreakdown)
-    pg.totalEstimateUsd += estimate
-    pg.totalActualMtdUsd += mtd
-    pg.totalEomUsd += eom
+    const group = groups.get(groupKey)!
+    group.services.push(svc)
+    group.totalEstimateUsd += svc.estimateUsd
+    group.totalActualMtdUsd += svc.actualMtdUsd
+    group.totalEomUsd += svc.eomUsd
   }
 
-  // Also pick up platform-level costs without service assignment
-  for (const a of actuals) {
-    if (a.serviceId === null) {
-      const pg = platformGroups.get(a.platformId)
-      if (pg) {
-        const total = parseFloat(a.total || '0')
-        pg.totalActualMtdUsd += total
-        pg.totalEomUsd += progress > 0 ? total / progress : total
+  // Add platform-level extras (only for platform grouping)
+  if (groupBy === 'platform') {
+    for (const [platformId, extra] of platformCostExtras) {
+      const slug = allServices.find(s => s.platformId === platformId)?.platformSlug
+      if (slug && groups.has(slug)) {
+        const group = groups.get(slug)!
+        group.totalActualMtdUsd += extra
+        group.totalEomUsd += progress > 0 ? extra / progress : extra
       }
     }
   }
 
-  // Finalize EUR totals
-  const result: PlatformBreakdown[] = []
-  for (const pg of platformGroups.values()) {
-    pg.totalEstimateEur = toEur(pg.totalEstimateUsd)
-    pg.totalActualMtdEur = toEur(pg.totalActualMtdUsd)
-    pg.totalEomEur = toEur(pg.totalEomUsd)
-    pg.totalActualMtdUsd = Math.round(pg.totalActualMtdUsd * 100) / 100
-    pg.totalEomUsd = Math.round(pg.totalEomUsd * 100) / 100
-    pg.services.sort((a, b) => b.estimateUsd - a.estimateUsd)
-    result.push(pg)
+  // Finalize EUR totals and sort
+  const result: GroupBreakdown[] = []
+  for (const group of groups.values()) {
+    group.totalEstimateEur = toEur(group.totalEstimateUsd)
+    group.totalActualMtdEur = toEur(group.totalActualMtdUsd)
+    group.totalEomEur = toEur(group.totalEomUsd)
+    group.totalActualMtdUsd = Math.round(group.totalActualMtdUsd * 100) / 100
+    group.totalEomUsd = Math.round(group.totalEomUsd * 100) / 100
+    group.services.sort((a, b) => b.estimateUsd - a.estimateUsd)
+    result.push(group)
   }
 
   result.sort((a, b) => b.totalEstimateUsd - a.totalEstimateUsd)
@@ -196,7 +231,11 @@ export default defineEventHandler(async () => {
   const grandTotalMtd = result.reduce((s, p) => s + p.totalActualMtdUsd, 0)
   const grandTotalEom = result.reduce((s, p) => s + p.totalEomUsd, 0)
 
+  // Collect distinct projects for the UI
+  const projects = [...new Set(allSvcBreakdowns.map(s => s.project).filter(Boolean))] as string[]
+
   return {
+    groupBy,
     monthProgress: Math.round(progress * 100),
     eurUsdRate: EUR_USD_RATE,
     grandTotal: {
@@ -207,6 +246,7 @@ export default defineEventHandler(async () => {
       eomUsd: Math.round(grandTotalEom * 100) / 100,
       eomEur: toEur(grandTotalEom),
     },
-    platforms: result,
+    groups: result,
+    projects,
   }
 })
