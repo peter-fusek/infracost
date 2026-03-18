@@ -15,7 +15,25 @@ interface Platform {
   lastError: string | null
 }
 
+interface ProbeResult {
+  slug: string
+  reachable: boolean
+  statusCode: number | null
+  latencyMs: number | null
+  error: string | null
+}
+
+interface StatusResponse {
+  total: number
+  reachable: number
+  unreachable: number
+  allReachable: boolean
+  platforms: Record<string, ProbeResult>
+  checkedAt: string
+}
+
 const { data: platformList, status } = await useFetch<Platform[]>('/api/platforms')
+const { data: apiStatus, status: apiStatusLoading } = await useFetch<StatusResponse>('/api/platforms/status', { lazy: true })
 
 const typeColors: Record<string, string> = {
   hosting: 'primary',
@@ -59,13 +77,27 @@ function statusIcon(status: string | null): string {
   if (status === 'running') return 'i-lucide-loader-2'
   return 'i-lucide-circle-dashed'
 }
+
+function getProbe(slug: string): ProbeResult | null {
+  return apiStatus.value?.platforms?.[slug] ?? null
+}
 </script>
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h2 class="text-2xl font-bold">Platforms</h2>
-      <p class="text-sm text-[var(--ui-text-muted)]">All monitored infrastructure platforms &middot; {{ platformList?.length ?? 0 }} active</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold">Platforms</h2>
+        <p class="text-sm text-[var(--ui-text-muted)]">All monitored infrastructure platforms &middot; {{ platformList?.length ?? 0 }} active</p>
+      </div>
+      <div v-if="apiStatus" class="flex items-center gap-2 text-sm">
+        <span class="flex items-center gap-1.5">
+          <span class="size-2 rounded-full" :class="apiStatus.allReachable ? 'bg-[var(--ui-success)]' : 'bg-[var(--ui-warning)]'" />
+          {{ apiStatus.reachable }}/{{ apiStatus.total }} APIs reachable
+        </span>
+        <span class="text-xs text-[var(--ui-text-dimmed)]">{{ timeAgo(apiStatus.checkedAt) }}</span>
+      </div>
+      <UIcon v-else-if="apiStatusLoading === 'pending'" name="i-lucide-loader-2" class="size-4 animate-spin text-[var(--ui-text-dimmed)]" />
     </div>
 
     <div v-if="status === 'pending'" class="flex justify-center py-8">
@@ -75,9 +107,26 @@ function statusIcon(status: string | null): string {
     <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <UCard v-for="platform in platformList" :key="platform.id">
         <div class="space-y-3">
-          <!-- Header -->
+          <!-- Header with API status dot -->
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold">{{ platform.name }}</h3>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="getProbe(platform.slug)"
+                class="size-2.5 rounded-full shrink-0"
+                :class="{
+                  'bg-[var(--ui-success)]': getProbe(platform.slug)?.reachable,
+                  'bg-[var(--ui-error)]': !getProbe(platform.slug)?.reachable,
+                }"
+                :title="getProbe(platform.slug)?.reachable
+                  ? `API reachable (${getProbe(platform.slug)?.latencyMs}ms)`
+                  : `API unreachable: ${getProbe(platform.slug)?.error || 'unknown'}`"
+              />
+              <span
+                v-else-if="apiStatusLoading === 'pending'"
+                class="size-2.5 rounded-full bg-[var(--ui-text-dimmed)] animate-pulse shrink-0"
+              />
+              <h3 class="font-semibold">{{ platform.name }}</h3>
+            </div>
             <UBadge :color="(typeColors[platform.type] as any) || 'neutral'" variant="subtle" size="sm">
               {{ platform.type }}
             </UBadge>
@@ -95,6 +144,10 @@ function statusIcon(status: string | null): string {
             <span>{{ platform.billingCycle }}</span>
             <span>&middot;</span>
             <span>{{ platform.serviceCount }} service{{ platform.serviceCount !== 1 ? 's' : '' }}</span>
+            <template v-if="getProbe(platform.slug)?.latencyMs">
+              <span>&middot;</span>
+              <span>{{ getProbe(platform.slug)?.latencyMs }}ms</span>
+            </template>
           </div>
 
           <!-- Collection status -->
