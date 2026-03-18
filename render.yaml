@@ -5,8 +5,7 @@ services:
     plan: free
     buildCommand: pnpm install && pnpm build
     startCommand: node .output/server/index.mjs
-    domains:
-      - infracost.eu
+    # Custom domain infracost.eu configured via Render dashboard (not supported in blueprint on free plan)
     envVars:
       - key: DATABASE_URL
         fromDatabase:
