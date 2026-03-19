@@ -1,4 +1,5 @@
 import { and, eq, gte, lte } from 'drizzle-orm'
+import type { BaseCollector } from '../../collectors/base'
 import { platforms, services, costRecords, collectionRuns } from '../../db/schema'
 import { getCurrentMonthRange } from '../../collectors/base'
 import { createAnthropicCollector } from '../../collectors/anthropic'
@@ -13,102 +14,87 @@ import { checkBudgetAlerts } from '../../services/budget-alerts'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) || {}
-  const targetPlatform = body.platform as string | undefined // optional: collect only specific platform
+  const targetPlatform = body.platform as string | undefined
 
   const db = useDB()
   const config = useRuntimeConfig()
   const { start, end } = getCurrentMonthRange()
 
-  const results: Array<{ platform: string, records: number, errors: string[] }> = []
-
-  // Get platforms to collect
+  const results: Array<{ platform: string; records: number; errors: string[] }> = []
   const platformList = await db.select().from(platforms).where(eq(platforms.isActive, true))
+
+  // Batch-load all services once to avoid N+1
+  const allServices = await db.select().from(services).where(eq(services.isActive, true))
+  const servicesByPlatform = new Map<number, typeof allServices>()
+  for (const svc of allServices) {
+    const list = servicesByPlatform.get(svc.platformId) ?? []
+    list.push(svc)
+    servicesByPlatform.set(svc.platformId, list)
+  }
 
   for (const platform of platformList) {
     if (targetPlatform && platform.slug !== targetPlatform) continue
     if (platform.collectionMethod === 'manual') continue
 
-    // Create collection run
+    const platformServices = servicesByPlatform.get(platform.id) ?? []
+    const apiServiceId = platformServices.find(s => s.serviceType === 'api_usage')?.id
+
+    // Build collector — skip if API key missing (before inserting run record)
+    let collector: BaseCollector | null = null
+    switch (platform.slug) {
+      case 'anthropic':
+        if (!config.anthropicAdminApiKey) continue
+        collector = createAnthropicCollector(config.anthropicAdminApiKey, platform.id, apiServiceId)
+        break
+      case 'railway':
+        if (!config.railwayApiToken) continue
+        collector = createRailwayCollector(config.railwayApiToken, platform.id, apiServiceId)
+        break
+      case 'render': {
+        if (!config.renderApiKey) continue
+        const svcMap = new Map(platformServices.map(s => [s.name, s.id]))
+        collector = createRenderCollector(config.renderApiKey, platform.id, svcMap)
+        break
+      }
+      case 'resend':
+        if (!config.resendApiKey) continue
+        collector = createResendCollector(config.resendApiKey, platform.id, apiServiceId)
+        break
+      case 'neon':
+        if (!config.neonApiKey) continue
+        collector = createNeonCollector(config.neonApiKey, platform.id)
+        break
+      case 'turso':
+        if (!config.tursoApiToken) continue
+        collector = createTursoCollector(config.tursoApiToken, platform.id)
+        break
+      case 'gcp':
+        collector = createGcpCollector('', platform.id, apiServiceId)
+        break
+      case 'uptimerobot':
+        if (!config.uptimeRobotApiKey) continue
+        collector = createUptimeRobotCollector(config.uptimeRobotApiKey, platform.id)
+        break
+      default:
+        continue
+    }
+
+    // Insert run record only after confirming we have a collector
     const [run] = await db.insert(collectionRuns).values({
       platformId: platform.id,
       triggerType: body.trigger || 'manual',
     }).returning()
 
     try {
-      // Get service IDs for this platform
-      const platformServices = await db
-        .select()
-        .from(services)
-        .where(eq(services.platformId, platform.id))
-
-      const apiServiceId = platformServices.find(s => s.serviceType === 'api_usage')?.id
-
-      // Create appropriate collector
-      let collector
-      switch (platform.slug) {
-        case 'anthropic':
-          if (!config.anthropicAdminApiKey) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
-            continue
-          }
-          collector = createAnthropicCollector(config.anthropicAdminApiKey, platform.id, apiServiceId)
-          break
-        case 'railway':
-          if (!config.railwayApiToken) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API token configured'] })
-            continue
-          }
-          collector = createRailwayCollector(config.railwayApiToken, platform.id, apiServiceId)
-          break
-        case 'render': {
-          if (!config.renderApiKey) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
-            continue
-          }
-          // Build name→serviceId map for linking records to services
-          const svcMap = new Map(platformServices.map(s => [s.name, s.id]))
-          collector = createRenderCollector(config.renderApiKey, platform.id, svcMap)
-          break
-        }
-        case 'resend':
-          if (!config.resendApiKey) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
-            continue
-          }
-          collector = createResendCollector(config.resendApiKey, platform.id, apiServiceId)
-          break
-        case 'neon':
-          if (!config.neonApiKey) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
-            continue
-          }
-          collector = createNeonCollector(config.neonApiKey, platform.id)
-          break
-        case 'turso':
-          if (!config.tursoApiToken) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API token configured'] })
-            continue
-          }
-          collector = createTursoCollector(config.tursoApiToken, platform.id)
-          break
-        case 'gcp':
-          collector = createGcpCollector('', platform.id, apiServiceId)
-          break
-        case 'uptimerobot':
-          if (!config.uptimeRobotApiKey) {
-            results.push({ platform: platform.slug, records: 0, errors: ['No API key configured'] })
-            continue
-          }
-          collector = createUptimeRobotCollector(config.uptimeRobotApiKey, platform.id)
-          break
-        default:
-          results.push({ platform: platform.slug, records: 0, errors: [`No collector implemented for ${platform.slug}`] })
-          continue
-      }
-
       const result = await collector.collect(start, end)
 
-      // Delete previous automated records for this platform+period to avoid duplicates
+      // Persist account identifier if returned
+      if (result.accountIdentifier) {
+        await db.update(platforms).set({
+          accountIdentifier: result.accountIdentifier,
+        }).where(eq(platforms.id, platform.id))
+      }
+
       if (result.records.length > 0) {
         await db.delete(costRecords).where(
           and(
@@ -121,36 +107,22 @@ export default defineEventHandler(async (event) => {
         await db.insert(costRecords).values(result.records)
       }
 
-      // Update collection run
-      await db.update(collectionRuns)
-        .set({
-          status: result.errors.length > 0 ? 'partial' : 'success',
-          recordsCollected: result.records.length,
-          errorMessage: result.errors.length > 0 ? result.errors.join('; ') : null,
-          completedAt: new Date(),
-        })
-        .where(eq(collectionRuns.id, run.id))
+      await db.update(collectionRuns).set({
+        status: result.errors.length > 0 ? 'partial' : 'success',
+        recordsCollected: result.records.length,
+        errorMessage: result.errors.length > 0 ? result.errors.join('; ') : null,
+        completedAt: new Date(),
+      }).where(eq(collectionRuns.id, run.id))
 
-      results.push({
-        platform: platform.slug,
-        records: result.records.length,
-        errors: result.errors,
-      })
+      results.push({ platform: platform.slug, records: result.records.length, errors: result.errors })
     }
     catch (err) {
-      await db.update(collectionRuns)
-        .set({
-          status: 'failed',
-          errorMessage: err instanceof Error ? err.message : String(err),
-          completedAt: new Date(),
-        })
-        .where(eq(collectionRuns.id, run.id))
-
-      results.push({
-        platform: platform.slug,
-        records: 0,
-        errors: [err instanceof Error ? err.message : String(err)],
-      })
+      await db.update(collectionRuns).set({
+        status: 'failed',
+        errorMessage: err instanceof Error ? err.message : String(err),
+        completedAt: new Date(),
+      }).where(eq(collectionRuns.id, run.id))
+      results.push({ platform: platform.slug, records: 0, errors: [String(err)] })
     }
   }
 
