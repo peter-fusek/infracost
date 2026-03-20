@@ -1,8 +1,7 @@
 import { and, eq, gte, lte, sql, isNull } from 'drizzle-orm'
 import { costRecords, platforms } from '../db/schema'
 import { getCurrentMonthRange, getMonthProgress } from '../collectors/base'
-
-const EUR_USD_RATE = 0.92
+import { EUR_USD_RATE, toEur } from '../utils/currency'
 
 interface DepletionPlatform {
   slug: string
@@ -76,9 +75,9 @@ export default defineEventHandler(async () => {
       slug,
       name: row?.platformName || slug,
       creditBalance: Math.round(estimatedCurrentBalance * 100) / 100,
-      creditBalanceEur: Math.round(estimatedCurrentBalance * EUR_USD_RATE * 100) / 100,
+      creditBalanceEur: toEur(estimatedCurrentBalance),
       dailyBurnRate: Math.round(dailyBurn * 100) / 100,
-      dailyBurnRateEur: Math.round(dailyBurn * EUR_USD_RATE * 100) / 100,
+      dailyBurnRateEur: toEur(dailyBurn),
       daysRemaining,
       depletionDate,
       mtd: Math.round(mtd * 100) / 100,

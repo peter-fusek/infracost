@@ -1,13 +1,8 @@
 import { describe, it, expect } from 'vitest'
+import { EUR_USD_RATE, toEur } from '../server/utils/currency'
 
 // Test the pure functions used in cost-aggregation
 // We can't test getMTDSummary directly (needs DB), but we can test the logic
-
-const EUR_USD_RATE = 0.92
-
-function toEur(usd: number): number {
-  return Math.round(usd * EUR_USD_RATE * 100) / 100
-}
 
 function isFixedCost(costType: string): boolean {
   return costType === 'subscription' || costType === 'one_time'

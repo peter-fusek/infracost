@@ -1,12 +1,7 @@
 import { and, eq, gte, lte, sql, isNull, desc } from 'drizzle-orm'
 import { costRecords, platforms, services, budgets } from '../db/schema'
 import { getMonthProgress, getCurrentMonthRange } from '../collectors/base'
-
-const EUR_USD_RATE = 0.92
-
-function toEur(usd: number): number {
-  return Math.round(usd * EUR_USD_RATE * 100) / 100
-}
+import { EUR_USD_RATE, toEur } from '../utils/currency'
 
 export interface ServiceCost {
   serviceId: number | null

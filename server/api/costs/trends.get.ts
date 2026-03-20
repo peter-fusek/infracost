@@ -1,7 +1,5 @@
 import { sql } from 'drizzle-orm'
-
-const EUR_USD_RATE = 0.92
-function toEur(usd: number) { return Math.round(usd * EUR_USD_RATE * 100) / 100 }
+import { EUR_USD_RATE, toEur } from '../../utils/currency'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
