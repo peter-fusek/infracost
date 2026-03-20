@@ -68,3 +68,36 @@ export function formatUsage(value: number, unit: string): string {
 export function formatLimit(limit: PlanLimit): string {
   return formatUsage(limit.limit, limit.unit)
 }
+
+/**
+ * Extract usage values from the latest rawData for each platform.
+ * Each platform has a different rawData shape — we handle them individually.
+ */
+export function extractUsage(slug: string, rawData: Record<string, unknown>): Record<string, number | null> {
+  switch (slug) {
+    case 'neon':
+      return {
+        active_seconds: typeof rawData.activeSecondsLimit === 'number' ? 0 : null, // usage needs consumption API
+        projects: typeof rawData.projectsLimit === 'number' ? rawData.projectsLimit as number : null,
+      }
+    case 'turso':
+      return {
+        rows_read: typeof rawData.rowsRead === 'number' ? rawData.rowsRead : null,
+        rows_written: typeof rawData.rowsWritten === 'number' ? rawData.rowsWritten : null,
+        storage_bytes: typeof rawData.storageBytes === 'number' ? rawData.storageBytes : null,
+        databases: typeof rawData.databases === 'number' ? rawData.databases : null,
+      }
+    case 'uptimerobot':
+      return {
+        monitors: typeof rawData.totalMonitors === 'number' ? rawData.totalMonitors : null,
+      }
+    case 'resend':
+      return { emails_per_month: null, emails_per_day: null }
+    case 'render':
+      return { pipeline_minutes: null }
+    case 'railway':
+      return { monthly_credit_usd: null }
+    default:
+      return {}
+  }
+}

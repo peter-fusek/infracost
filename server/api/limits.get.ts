@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { PLAN_LIMITS, formatUsage, formatLimit } from '../utils/plan-limits'
+import { PLAN_LIMITS, formatUsage, formatLimit, extractUsage } from '../utils/plan-limits'
 import type { PlanLimit } from '../utils/plan-limits'
 
 interface LimitMetric {
@@ -29,48 +29,6 @@ function riskFromPct(pct: number | null): LimitMetric['riskLevel'] {
 }
 
 const RISK_ORDER = { exceeded: 0, critical: 1, warning: 2, ok: 3, unknown: 4 }
-
-/**
- * Extract usage values from the latest rawData for each platform.
- * Each platform has a different rawData shape — we handle them individually.
- */
-function extractUsage(slug: string, rawData: Record<string, unknown>): Record<string, number | null> {
-  switch (slug) {
-    case 'neon':
-      return {
-        active_seconds: typeof rawData.activeSecondsLimit === 'number' ? 0 : null, // limit only for now; usage needs consumption API
-        projects: typeof rawData.projectsLimit === 'number' ? rawData.projectsLimit as number : null,
-      }
-    case 'turso':
-      return {
-        rows_read: typeof rawData.rowsRead === 'number' ? rawData.rowsRead : null,
-        rows_written: typeof rawData.rowsWritten === 'number' ? rawData.rowsWritten : null,
-        storage_bytes: typeof rawData.storageBytes === 'number' ? rawData.storageBytes : null,
-        databases: typeof rawData.databases === 'number' ? rawData.databases : null,
-      }
-    case 'uptimerobot':
-      return {
-        monitors: typeof rawData.totalMonitors === 'number' ? rawData.totalMonitors : null,
-      }
-    case 'resend':
-      return {
-        emails_per_month: null, // not available via API
-        emails_per_day: null,
-      }
-    case 'render':
-      return {
-        pipeline_minutes: null, // not available via API
-      }
-    case 'railway': {
-      // Sum estimated cost from rawData.metrics if available
-      return {
-        monthly_credit_usd: null, // cost is in the record amount, not rawData
-      }
-    }
-    default:
-      return {}
-  }
-}
 
 export default defineEventHandler(async () => {
   const db = useDB()

@@ -1,53 +1,7 @@
 import { and, eq, isNull, gte } from 'drizzle-orm'
 import { budgets, alerts } from '../db/schema'
 import { getMTDSummary } from './cost-aggregation'
-
-async function sendAlertEmail(message: string, severity: string, config: Record<string, string>) {
-  if (!config.resendApiKey) return
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'InfraCost <alerts@contactrefiner.com>',
-        to: ['peterfusek1980@gmail.com'],
-        subject: `[InfraCost ${severity.toUpperCase()}] ${message.substring(0, 80)}`,
-        text: message,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!response.ok) {
-      console.error(`[budget-alerts] Email send returned ${response.status}: ${await response.text()}`)
-    }
-  }
-  catch (err) {
-    console.error('[budget-alerts] Email send failed:', err instanceof Error ? err.message : err)
-  }
-}
-
-async function sendWhatsApp(message: string, config: Record<string, string>) {
-  // Uses CallMeBot free WhatsApp API — requires one-time setup:
-  // Send "I allow callmebot to send me messages" to +34 644 71 85 38 on WhatsApp
-  // Then set WHATSAPP_PHONE and WHATSAPP_APIKEY env vars
-  const phone = config.whatsappPhone
-  const apikey = config.whatsappApikey
-  if (!phone || !apikey) return
-  try {
-    const encoded = encodeURIComponent(message)
-    const response = await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encoded}&apikey=${apikey}`, {
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!response.ok) {
-      console.error(`[budget-alerts] WhatsApp send returned ${response.status}: ${await response.text()}`)
-    }
-  }
-  catch (err) {
-    console.error('[budget-alerts] WhatsApp send failed:', err instanceof Error ? err.message : err)
-  }
-}
+import { sendAlertEmail, sendWhatsApp } from '../utils/notifications'
 
 const THRESHOLDS = [
   { pct: 100, severity: 'critical' as const, label: 'exceeded' },
@@ -111,8 +65,10 @@ export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/d
 
       // Send email + WhatsApp for warning and critical alerts
       if (config && (threshold.severity === 'warning' || threshold.severity === 'critical')) {
-        await sendAlertEmail(message, threshold.severity, config)
-        await sendWhatsApp(`🚨 InfraCost ${threshold.severity}: ${message}`, config)
+        await Promise.all([
+          sendAlertEmail(message, threshold.severity, message.substring(0, 80), config),
+          sendWhatsApp(`🚨 InfraCost ${threshold.severity}: ${message}`, config),
+        ])
       }
 
       // Only create the highest threshold alert, not all lower ones
