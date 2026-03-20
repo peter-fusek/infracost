@@ -13,14 +13,14 @@
 - Collectors: server/collectors/*.ts — each returns CollectorResult { records, errors, accountIdentifier? }
 - Collect task: server/tasks/collect.ts — daily cron at 06:00 UTC + manual trigger
 - Auth: nuxt-auth-utils + Google OAuth. Middleware at server/middleware/auth.ts protects POST/PATCH/DELETE
-- Pages: 9 total (/, /breakdown, /trends, /platforms, /limits, /depletion, /optimizations, /status, /manual)
+- Pages: 10 total (/, /breakdown, /trends, /platforms, /limits, /depletion, /optimizations, /status, /budgets, /manual)
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
 - Input validation: server/utils/validation.ts (parseId, parseAmount, parsePagination)
 - Notifications: server/utils/notifications.ts (sendAlertEmail, sendWhatsApp) — shared by budget + plan limit alerts
 - Plan limits: server/utils/plan-limits.ts (PLAN_LIMITS, extractUsage, formatUsage, formatLimit)
-- EUR conversion: hardcoded EUR_USD_RATE = 0.92 (update monthly)
+- EUR conversion: server/utils/currency.ts (EUR_USD_RATE, toEur) — update monthly
 - Fetch timeouts: AbortSignal.timeout(15_000) on all external calls, 30s for Railway GraphQL
 - Error handling: always surface errors in errors[] array, never empty catch blocks
 - Collection dedup: delete old records before inserting new per platform+period
