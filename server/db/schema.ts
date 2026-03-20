@@ -100,7 +100,10 @@ export const alerts = pgTable('alerts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   resolvedAt: timestamp('resolved_at'),
   deletedAt: timestamp('deleted_at'),
-})
+}, (t) => [
+  index('idx_alerts_type_created').on(t.alertType, t.createdAt),
+  index('idx_alerts_active_created').on(t.isActive, t.createdAt),
+])
 
 // --- Optimizations ---
 

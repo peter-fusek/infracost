@@ -13,8 +13,8 @@ export async function sendAlertEmail(message: string, severity: string, subject:
         'Authorization': `Bearer ${config.resendApiKey}`,
       },
       body: JSON.stringify({
-        from: 'InfraCost <alerts@contactrefiner.com>',
-        to: ['peterfusek1980@gmail.com'],
+        from: config.alertFromEmail || 'InfraCost <alerts@contactrefiner.com>',
+        to: [config.alertToEmail || 'peterfusek1980@gmail.com'],
         subject: `[InfraCost ${severity.toUpperCase()}] ${subject}`,
         text: message,
       }),

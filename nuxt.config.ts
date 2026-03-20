@@ -52,6 +52,8 @@ export default defineNuxtConfig({
     uptimeRobotApiKey: process.env.UPTIMEROBOT_API_KEY || '',
     whatsappPhone: process.env.WHATSAPP_PHONE || '',
     whatsappApikey: process.env.WHATSAPP_APIKEY || '',
+    alertFromEmail: process.env.ALERT_FROM_EMAIL || 'InfraCost <alerts@contactrefiner.com>',
+    alertToEmail: process.env.ALERT_TO_EMAIL || 'peterfusek1980@gmail.com',
     public: {
       eurUsdRate: 0.92, // EUR per 1 USD — update monthly
     },
