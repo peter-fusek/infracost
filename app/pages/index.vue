@@ -155,19 +155,22 @@ const platforms = [
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-8">
     <!-- Hero Section -->
-    <section class="relative overflow-hidden rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-6 py-12 sm:px-12 sm:py-16">
-      <div class="absolute inset-0 bg-gradient-to-br from-[var(--ui-primary)]/5 via-transparent to-[var(--ui-primary)]/3" />
+    <section class="relative overflow-hidden rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-6 py-14 sm:px-12 sm:py-20 hero-mesh">
+      <div class="absolute inset-0 hero-grid" />
       <div class="relative mx-auto max-w-3xl text-center">
-        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-          Every dollar your infrastructure spends.
-          <span class="text-[var(--ui-primary)]">One dashboard.</span>
-        </h1>
-        <p class="mx-auto mt-4 max-w-2xl text-lg text-[var(--ui-text-muted)] sm:mt-6">
+        <div class="animate-fade-in-up" style="animation-delay: 0ms">
+          <p class="mb-4 text-sm font-semibold uppercase tracking-widest text-emerald-500">Infrastructure Cost Intelligence</p>
+          <h1 class="font-display text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            Every dollar your infrastructure spends.
+            <span class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">One dashboard.</span>
+          </h1>
+        </div>
+        <p class="animate-fade-in-up mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-[var(--ui-text-muted)]" style="animation-delay: 100ms">
           Automated cost tracking across 9 cloud and AI platforms. Budget alerts before you overspend. Depletion forecasts before your credits run dry. Collection freshness you can trust. USD and EUR.
         </p>
-        <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <div class="animate-fade-in-up mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center" style="animation-delay: 200ms">
           <UButton
             v-if="!loggedIn"
             to="/auth/google"
@@ -200,24 +203,29 @@ const platforms = [
     <section>
       <h2 class="sr-only">Features</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <UCard v-for="feature in features" :key="feature.title">
+        <div
+          v-for="(feature, i) in features"
+          :key="feature.title"
+          class="feature-card animate-fade-in-up rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5"
+          :style="{ animationDelay: `${300 + i * 60}ms` }"
+        >
           <div class="flex gap-4">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--ui-primary)]/10">
-              <UIcon :name="feature.icon" class="size-5 text-[var(--ui-primary)]" />
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+              <UIcon :name="feature.icon" class="size-5 text-emerald-500" />
             </div>
             <div>
-              <h3 class="font-semibold">{{ feature.title }}</h3>
-              <p class="mt-1 text-sm text-[var(--ui-text-muted)]">{{ feature.description }}</p>
+              <h3 class="font-display font-bold">{{ feature.title }}</h3>
+              <p class="mt-1.5 text-sm leading-relaxed text-[var(--ui-text-muted)]">{{ feature.description }}</p>
             </div>
           </div>
-        </UCard>
+        </div>
       </div>
     </section>
 
     <!-- Tracked Platforms -->
-    <section class="text-center">
-      <h2 class="text-sm font-medium uppercase tracking-wider text-[var(--ui-text-muted)]">Tracking costs across</h2>
-      <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+    <section class="text-center animate-fade-in-up" style="animation-delay: 700ms">
+      <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ui-text-dimmed)]">Tracking costs across</h2>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
         <UBadge
           v-for="p in platforms"
           :key="p.name"
@@ -232,12 +240,12 @@ const platforms = [
 
     <!-- Dashboard Section (authenticated users) -->
     <template v-if="loggedIn">
-      <USeparator />
+      <div class="h-px bg-gradient-to-r from-transparent via-[var(--ui-border)] to-transparent" />
 
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-bold">Infrastructure Costs</h2>
-          <p class="text-sm text-[var(--ui-text-muted)]">
+          <h2 class="font-display text-2xl font-black tracking-tight">Infrastructure Costs</h2>
+          <p class="mt-1 text-sm text-[var(--ui-text-muted)]">
             {{ new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }}
             &middot; Day {{ mtd?.currentDay || 0 }} of {{ mtd?.daysInMonth || 31 }}
             &middot; 1 USD = {{ mtd?.eurUsdRate ?? 0.92 }} EUR
@@ -245,47 +253,53 @@ const platforms = [
         </div>
       </div>
 
-      <!-- Top metric cards -->
+      <!-- Top metric cards with accent borders -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <UCard>
+        <UCard class="metric-card-mtd">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm text-[var(--ui-text-muted)]">Month-to-Date</p>
-              <p class="mt-1 text-2xl font-semibold">${{ fmt(mtd?.totalMTD) }}</p>
-              <p class="mt-0.5 text-sm text-[var(--ui-text-dimmed)]">€{{ fmt(mtd?.totalMTDEur) }}</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Month-to-Date</p>
+              <p class="mt-1.5 text-2xl font-bold tabular-nums">${{ fmt(mtd?.totalMTD) }}</p>
+              <p class="mt-0.5 text-sm tabular-nums text-[var(--ui-text-dimmed)]">€{{ fmt(mtd?.totalMTDEur) }}</p>
             </div>
-            <UIcon name="i-lucide-dollar-sign" class="size-5 text-[var(--ui-text-muted)]" />
+            <div class="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10">
+              <UIcon name="i-lucide-dollar-sign" class="size-4 text-emerald-500" />
+            </div>
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="metric-card-eom">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm text-[var(--ui-text-muted)]">EOM Estimate</p>
-              <p class="mt-1 text-2xl font-semibold">${{ fmt(mtd?.eomEstimate) }}</p>
-              <p class="mt-0.5 text-sm text-[var(--ui-text-dimmed)]">€{{ fmt(mtd?.eomEstimateEur) }}</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">EOM Estimate</p>
+              <p class="mt-1.5 text-2xl font-bold tabular-nums">${{ fmt(mtd?.eomEstimate) }}</p>
+              <p class="mt-0.5 text-sm tabular-nums text-[var(--ui-text-dimmed)]">€{{ fmt(mtd?.eomEstimateEur) }}</p>
             </div>
-            <UIcon name="i-lucide-trending-up" class="size-5 text-[var(--ui-text-muted)]" />
+            <div class="flex size-9 items-center justify-center rounded-lg bg-cyan-500/10">
+              <UIcon name="i-lucide-trending-up" class="size-4 text-cyan-500" />
+            </div>
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="metric-card-budget">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm text-[var(--ui-text-muted)]">Budget</p>
-              <p class="mt-1 text-2xl font-semibold">{{ mtd?.budgetUsedPct ?? 0 }}%</p>
-              <p class="mt-0.5 text-sm text-[var(--ui-text-dimmed)]">${{ fmt(mtd?.eomEstimate) }} / ${{ fmt(mtd?.budgetLimit) }}</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Budget</p>
+              <p class="mt-1.5 text-2xl font-bold tabular-nums">{{ mtd?.budgetUsedPct ?? 0 }}%</p>
+              <p class="mt-0.5 text-sm tabular-nums text-[var(--ui-text-dimmed)]">${{ fmt(mtd?.eomEstimate) }} / ${{ fmt(mtd?.budgetLimit) }}</p>
             </div>
-            <UIcon name="i-lucide-gauge" class="size-5 text-[var(--ui-text-muted)]" />
+            <div class="flex size-9 items-center justify-center rounded-lg bg-amber-500/10">
+              <UIcon name="i-lucide-gauge" class="size-4 text-amber-500" />
+            </div>
           </div>
           <div class="mt-3">
-            <div class="h-2 w-full rounded-full bg-[var(--ui-bg-elevated)]">
+            <div class="h-1.5 w-full rounded-full bg-[var(--ui-bg)]">
               <div
-                class="h-2 rounded-full transition-all"
+                class="h-1.5 rounded-full transition-all duration-700"
                 :class="{
-                  'bg-[var(--ui-primary)]': budgetColor === 'primary',
-                  'bg-[var(--ui-warning)]': budgetColor === 'warning',
-                  'bg-[var(--ui-error)]': budgetColor === 'error',
+                  'bg-emerald-500': budgetColor === 'primary',
+                  'bg-amber-500': budgetColor === 'warning',
+                  'bg-red-500': budgetColor === 'error',
                 }"
                 :style="{ width: `${Math.min(mtd?.budgetUsedPct ?? 0, 100)}%` }"
               />
@@ -293,14 +307,16 @@ const platforms = [
           </div>
         </UCard>
 
-        <UCard>
+        <UCard class="metric-card-platforms">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm text-[var(--ui-text-muted)]">Platforms Tracked</p>
-              <p class="mt-1 text-2xl font-semibold">{{ mtd?.byPlatform?.length || 0 }}</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Platforms Tracked</p>
+              <p class="mt-1.5 text-2xl font-bold tabular-nums">{{ mtd?.byPlatform?.length || 0 }}</p>
               <p class="mt-0.5 text-sm text-[var(--ui-text-dimmed)]">{{ mtd?.monthProgress ?? 0 }}% through month</p>
             </div>
-            <UIcon name="i-lucide-server" class="size-5 text-[var(--ui-text-muted)]" />
+            <div class="flex size-9 items-center justify-center rounded-lg bg-violet-500/10">
+              <UIcon name="i-lucide-server" class="size-4 text-violet-500" />
+            </div>
           </div>
         </UCard>
       </div>
@@ -339,35 +355,36 @@ const platforms = [
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold">Cost by Platform</h3>
+            <h3 class="font-display font-bold">Cost by Platform</h3>
             <UButton to="/breakdown" variant="ghost" size="xs" label="View Full Breakdown" icon="i-lucide-arrow-right" trailing />
           </div>
         </template>
 
         <div v-if="status === 'pending'" class="flex justify-center py-8" role="status" aria-label="Loading">
-          <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" />
+          <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-emerald-500" />
         </div>
 
-        <div v-else-if="!mtd?.byPlatform?.length" class="py-8 text-center text-[var(--ui-text-muted)]">
-          <p>No cost data yet.</p>
-          <p class="mt-1 text-sm">Click "Collect Now" or add manual entries to get started.</p>
+        <div v-else-if="!mtd?.byPlatform?.length" class="py-12 text-center">
+          <UIcon name="i-lucide-database" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
+          <p class="mt-3 font-medium text-[var(--ui-text-muted)]">No cost data yet</p>
+          <p class="mt-1 text-sm text-[var(--ui-text-dimmed)]">Click "Collect Now" or add manual entries to get started.</p>
         </div>
 
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left text-[var(--ui-text-muted)]">
-                <th scope="col" class="pb-3 font-medium">Platform</th>
-                <th scope="col" class="pb-3 font-medium">Type</th>
-                <th scope="col" class="pb-3 text-right font-medium">MTD (USD)</th>
-                <th scope="col" class="pb-3 text-right font-medium">MTD (EUR)</th>
-                <th scope="col" class="pb-3 text-right font-medium">EOM Est. (USD)</th>
-                <th scope="col" class="pb-3 text-right font-medium">EOM Est. (EUR)</th>
-                <th scope="col" class="pb-3 text-right font-medium">Records</th>
+              <tr class="text-left text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-dimmed)]">
+                <th scope="col" class="pb-3">Platform</th>
+                <th scope="col" class="pb-3">Type</th>
+                <th scope="col" class="pb-3 text-right">MTD (USD)</th>
+                <th scope="col" class="pb-3 text-right">MTD (EUR)</th>
+                <th scope="col" class="pb-3 text-right">EOM Est. (USD)</th>
+                <th scope="col" class="pb-3 text-right">EOM Est. (EUR)</th>
+                <th scope="col" class="pb-3 text-right">Records</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in mtd.byPlatform" :key="p.platformId" class="border-t border-[var(--ui-border)]">
+              <tr v-for="p in mtd.byPlatform" :key="p.platformId" class="data-row border-t border-[var(--ui-border)]">
                 <td class="py-2.5 font-medium">{{ p.platformName }}</td>
                 <td class="py-2.5">
                   <UBadge
@@ -377,21 +394,21 @@ const platforms = [
                     {{ p.platformType }}
                   </UBadge>
                 </td>
-                <td class="py-2.5 text-right font-mono">${{ fmt(p.mtd) }}</td>
-                <td class="py-2.5 text-right font-mono text-[var(--ui-text-muted)]">€{{ fmt(p.mtdEur) }}</td>
-                <td class="py-2.5 text-right font-mono">${{ fmt(p.eomEstimate) }}</td>
-                <td class="py-2.5 text-right font-mono text-[var(--ui-text-muted)]">€{{ fmt(p.eomEstimateEur) }}</td>
-                <td class="py-2.5 text-right">{{ p.recordCount }}</td>
+                <td class="py-2.5 text-right font-mono tabular-nums">${{ fmt(p.mtd) }}</td>
+                <td class="py-2.5 text-right font-mono tabular-nums text-[var(--ui-text-muted)]">€{{ fmt(p.mtdEur) }}</td>
+                <td class="py-2.5 text-right font-mono tabular-nums">${{ fmt(p.eomEstimate) }}</td>
+                <td class="py-2.5 text-right font-mono tabular-nums text-[var(--ui-text-muted)]">€{{ fmt(p.eomEstimateEur) }}</td>
+                <td class="py-2.5 text-right tabular-nums">{{ p.recordCount }}</td>
               </tr>
             </tbody>
             <tfoot>
-              <tr class="border-t-2 border-[var(--ui-border)] font-semibold">
+              <tr class="border-t-2 border-[var(--ui-border)] font-bold">
                 <td class="pt-3" colspan="2">Total</td>
-                <td class="pt-3 text-right font-mono">${{ fmt(mtd.totalMTD) }}</td>
-                <td class="pt-3 text-right font-mono text-[var(--ui-text-muted)]">€{{ fmt(mtd.totalMTDEur) }}</td>
-                <td class="pt-3 text-right font-mono">${{ fmt(mtd.eomEstimate) }}</td>
-                <td class="pt-3 text-right font-mono text-[var(--ui-text-muted)]">€{{ fmt(mtd.eomEstimateEur) }}</td>
-                <td class="pt-3 text-right">{{ mtd.byPlatform.reduce((s: number, p: PlatformCost) => s + p.recordCount, 0) }}</td>
+                <td class="pt-3 text-right font-mono tabular-nums">${{ fmt(mtd.totalMTD) }}</td>
+                <td class="pt-3 text-right font-mono tabular-nums text-[var(--ui-text-muted)]">€{{ fmt(mtd.totalMTDEur) }}</td>
+                <td class="pt-3 text-right font-mono tabular-nums">${{ fmt(mtd.eomEstimate) }}</td>
+                <td class="pt-3 text-right font-mono tabular-nums text-[var(--ui-text-muted)]">€{{ fmt(mtd.eomEstimateEur) }}</td>
+                <td class="pt-3 text-right tabular-nums">{{ mtd.byPlatform.reduce((s: number, p: PlatformCost) => s + p.recordCount, 0) }}</td>
               </tr>
             </tfoot>
           </table>
