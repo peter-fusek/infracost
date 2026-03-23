@@ -232,6 +232,19 @@ export default defineEventHandler(async (event) => {
   // Collect distinct projects for the UI
   const projects = [...new Set(allSvcBreakdowns.map(s => s.project).filter(Boolean))] as string[]
 
+  // Global last updated: most recent collection run completion
+  const lastUpdated = result.reduce<string | null>((latest, g) => {
+    if (!g.lastCollectedAt) return latest
+    if (!latest) return g.lastCollectedAt
+    return g.lastCollectedAt > latest ? g.lastCollectedAt : latest
+  }, null)
+
+  // Next update: daily cron at 06:00 UTC
+  const now = new Date()
+  const nextRun = new Date(now)
+  nextRun.setUTCHours(6, 0, 0, 0)
+  if (nextRun <= now) nextRun.setUTCDate(nextRun.getUTCDate() + 1)
+
   return {
     groupBy,
     monthProgress: Math.round(progress * 100),
@@ -246,5 +259,7 @@ export default defineEventHandler(async (event) => {
     },
     groups: result,
     projects,
+    lastUpdatedAt: lastUpdated,
+    nextUpdateAt: nextRun.toISOString(),
   }
 })

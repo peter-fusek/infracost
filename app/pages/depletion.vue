@@ -19,7 +19,23 @@ interface DepletionResponse {
   checkedAt: string
 }
 
-const { data, status } = await useFetch<DepletionResponse>('/api/depletion')
+const { data, status, refresh } = await useFetch<DepletionResponse>('/api/depletion')
+const { loggedIn } = useUserSession()
+const toast = useToast()
+const collecting = ref(false)
+
+async function triggerCollection() {
+  collecting.value = true
+  try {
+    await $fetch('/api/collect/trigger', { method: 'POST' })
+    toast.add({ title: 'Collection started', description: 'Data will refresh shortly', color: 'success' })
+    setTimeout(() => refresh(), 5000)
+  } catch {
+    toast.add({ title: 'Error', description: 'Failed to trigger collection', color: 'error' })
+  } finally {
+    collecting.value = false
+  }
+}
 
 function riskColor(level: string) {
   if (level === 'depleted') return 'error'
@@ -46,11 +62,20 @@ function progressPct(p: DepletionPlatform) {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="font-display text-2xl font-black tracking-tight">Credit Depletion Tracker</h1>
-      <p class="text-sm text-[var(--ui-text-muted)]">
-        Prepaid platform balances &middot; burn rate &middot; days until empty
-      </p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="font-display text-2xl font-black tracking-tight">Credit Depletion Tracker</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">
+          Prepaid platform balances &middot; burn rate &middot; days until empty
+        </p>
+      </div>
+      <UButton
+        v-if="loggedIn"
+        icon="i-lucide-refresh-cw"
+        label="Refresh"
+        :loading="collecting"
+        @click="triggerCollection"
+      />
     </div>
 
     <div v-if="status === 'pending'" class="flex justify-center py-8" role="status" aria-label="Loading">

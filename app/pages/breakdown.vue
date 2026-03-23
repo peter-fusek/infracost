@@ -48,6 +48,8 @@ interface BreakdownResponse {
   }
   groups: GroupBreakdown[]
   projects: string[]
+  lastUpdatedAt: string | null
+  nextUpdateAt: string
 }
 
 const route = useRoute()
@@ -59,7 +61,25 @@ const { data, status, refresh } = await useFetch<BreakdownResponse>('/api/costs/
   watch: [groupBy],
 })
 
+const { loggedIn } = useUserSession()
+const toast = useToast()
+
 const expanded = ref<Set<string>>(new Set(highlightPlatform.value ? [highlightPlatform.value] : []))
+const collecting = ref(false)
+
+async function triggerCollection() {
+  collecting.value = true
+  try {
+    await $fetch('/api/collect/trigger', { method: 'POST' })
+    toast.add({ title: 'Collection started', description: 'Data will refresh shortly', color: 'success' })
+    // Refresh data after a short delay for the collection to complete
+    setTimeout(() => refresh(), 5000)
+  } catch {
+    toast.add({ title: 'Error', description: 'Failed to trigger collection', color: 'error' })
+  } finally {
+    collecting.value = false
+  }
+}
 
 function toggle(key: string) {
   if (expanded.value.has(key)) {
@@ -136,22 +156,36 @@ const platformTooltips: Record<string, string> = {
         <p class="text-sm text-[var(--ui-text-muted)]">
           Per-service detail &middot; {{ data?.monthProgress ?? 0 }}% through month &middot; 1 USD = {{ data?.eurUsdRate ?? 0.92 }} EUR
         </p>
+        <p v-if="data?.lastUpdatedAt" class="text-xs text-[var(--ui-text-dimmed)]">
+          Updated {{ timeAgo(data.lastUpdatedAt) }} &middot; Next update {{ new Date(data.nextUpdateAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+        </p>
       </div>
-      <div class="flex items-center gap-1 rounded-lg border border-[var(--ui-border)] p-0.5">
+      <div class="flex items-center gap-2">
         <UButton
+          v-if="loggedIn"
+          icon="i-lucide-refresh-cw"
+          label="Refresh"
           size="xs"
-          :variant="groupBy === 'platform' ? 'solid' : 'ghost'"
-          icon="i-lucide-server"
-          label="By Platform"
-          @click="groupBy = 'platform'"
+          variant="ghost"
+          :loading="collecting"
+          @click.stop="triggerCollection"
         />
-        <UButton
-          size="xs"
-          :variant="groupBy === 'project' ? 'solid' : 'ghost'"
-          icon="i-lucide-folder"
-          label="By Project"
-          @click="groupBy = 'project'"
-        />
+        <div class="flex items-center gap-1 rounded-lg border border-[var(--ui-border)] p-0.5">
+          <UButton
+            size="xs"
+            :variant="groupBy === 'platform' ? 'solid' : 'ghost'"
+            icon="i-lucide-server"
+            label="By Platform"
+            @click="groupBy = 'platform'"
+          />
+          <UButton
+            size="xs"
+            :variant="groupBy === 'project' ? 'solid' : 'ghost'"
+            icon="i-lucide-folder"
+            label="By Project"
+            @click="groupBy = 'project'"
+          />
+        </div>
       </div>
     </div>
 
