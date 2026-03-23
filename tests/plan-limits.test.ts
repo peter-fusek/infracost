@@ -95,9 +95,15 @@ describe('extractUsage', () => {
     expect(extractUsage('unknown', {})).toEqual({})
   })
 
-  it('extracts neon projects from limit field', () => {
-    const usage = extractUsage('neon', { projectsLimit: 5, activeSecondsLimit: 360000 })
-    expect(usage.projects).toBe(5)
-    expect(usage.active_seconds).toBe(0) // hardcoded 0 — API doesn't expose actual usage
+  it('extracts neon projects from actual count', () => {
+    const usage = extractUsage('neon', { projectCount: 3, projectsLimit: 10, activeSecondsLimit: 360000 })
+    expect(usage.projects).toBe(3)
+    expect(usage.active_seconds).toBeNull() // requires paid-plan consumption API
+  })
+
+  it('extracts resend email counts from rawData', () => {
+    const usage = extractUsage('resend', { emailsThisMonth: 42, emailsToday: 5 })
+    expect(usage.emails_per_month).toBe(42)
+    expect(usage.emails_per_day).toBe(5)
   })
 })

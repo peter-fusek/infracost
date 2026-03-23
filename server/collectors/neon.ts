@@ -35,6 +35,21 @@ export function createNeonCollector(apiKey: string, platformId: number): BaseCol
 
         const email = user.auth_accounts?.[0]?.email || 'unknown'
 
+        // Count actual projects
+        let projectCount: number | null = null
+        try {
+          const projRes = await fetch('https://console.neon.tech/api/v2/projects', {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(15_000),
+          })
+          if (projRes.ok) {
+            const projData = await projRes.json() as { projects: Array<{ id: string }> }
+            projectCount = projData.projects?.length ?? null
+          }
+        } catch {
+          // Non-critical — project count is best-effort
+        }
+
         records.push({
           platformId,
           recordDate: new Date(),
@@ -47,10 +62,11 @@ export function createNeonCollector(apiKey: string, platformId: number): BaseCol
           rawData: {
             plan: user.plan,
             email,
+            projectCount,
             projectsLimit: user.projects_limit,
             activeSecondsLimit: user.active_seconds_limit,
           },
-          notes: `Neon: ${user.plan} plan (${email})`,
+          notes: `Neon: ${user.plan} plan, ${projectCount ?? '?'} projects (${email})`,
         })
 
         return { records, errors, accountIdentifier: email }

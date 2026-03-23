@@ -77,8 +77,9 @@ export function extractUsage(slug: string, rawData: Record<string, unknown>): Re
   switch (slug) {
     case 'neon':
       return {
-        active_seconds: typeof rawData.activeSecondsLimit === 'number' ? 0 : null, // usage needs consumption API
-        projects: typeof rawData.projectsLimit === 'number' ? rawData.projectsLimit as number : null,
+        active_seconds: null, // compute usage requires paid-plan consumption API
+        projects: typeof rawData.projectCount === 'number' ? rawData.projectCount : null,
+        storage_gib: null, // storage usage requires paid-plan consumption API
       }
     case 'turso':
       return {
@@ -92,7 +93,10 @@ export function extractUsage(slug: string, rawData: Record<string, unknown>): Re
         monitors: typeof rawData.totalMonitors === 'number' ? rawData.totalMonitors : null,
       }
     case 'resend':
-      return { emails_per_month: null, emails_per_day: null }
+      return {
+        emails_per_month: typeof rawData.emailsThisMonth === 'number' ? rawData.emailsThisMonth : null,
+        emails_per_day: typeof rawData.emailsToday === 'number' ? rawData.emailsToday : null,
+      }
     case 'render':
       return { pipeline_minutes: null }
     case 'railway':
