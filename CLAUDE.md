@@ -12,7 +12,8 @@
 - DB: Render PostgreSQL. Schema at server/db/schema.ts
 - Collectors: server/collectors/*.ts — each returns CollectorResult { records, errors, accountIdentifier? }
 - Collect task: server/tasks/collect.ts — daily cron at 06:00 UTC + manual trigger
-- Auth: nuxt-auth-utils + Google OAuth. Middleware at server/middleware/auth.ts protects POST/PATCH/DELETE
+- Auth: nuxt-auth-utils + Google OAuth. Middleware at server/middleware/auth.ts protects POST/PATCH/DELETE (except /api/bugs)
+- Bug reporter: app/components/BugReportButton.vue + app/composables/useBugReport.ts → server/api/bugs.post.ts (needs GITHUB_TOKEN env var)
 - Pages: 10 total (/, /breakdown, /trends, /platforms, /limits, /depletion, /optimizations, /status, /budgets, /manual)
 
 ## Conventions
@@ -21,6 +22,7 @@
 - Notifications: server/utils/notifications.ts (sendAlertEmail, sendWhatsApp) — shared by budget + plan limit alerts
 - Plan limits: server/utils/plan-limits.ts (PLAN_LIMITS, extractUsage, formatUsage, formatLimit)
 - EUR conversion: server/utils/currency.ts (EUR_USD_RATE, toEur) — update monthly
+- Bug issue markdown: server/utils/bug-report-markdown.ts (buildBugIssueBody, BugContext type)
 - Fetch timeouts: AbortSignal.timeout(15_000) on all external calls, 30s for Railway GraphQL
 - Error handling: always surface errors in errors[] array, never empty catch blocks
 - Collection dedup: delete old records before inserting new per platform+period
