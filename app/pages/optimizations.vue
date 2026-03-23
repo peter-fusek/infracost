@@ -16,6 +16,7 @@ interface Optimization {
 }
 
 const { data: items, status, refresh } = await useFetch<Optimization[]>('/api/optimizations')
+const { loggedIn } = useUserSession()
 
 const route = useRoute()
 const router = useRouter()
@@ -166,12 +167,12 @@ const totalSavings = computed(() => {
           {{ opt.description }}
         </div>
 
-        <!-- Actions -->
-        <div v-if="opt.status === 'suggested'" class="mt-4 flex gap-2 border-t border-[var(--ui-border)] pt-3">
+        <!-- Actions (auth-gated) -->
+        <div v-if="loggedIn && opt.status === 'suggested'" class="mt-4 flex gap-2 border-t border-[var(--ui-border)] pt-3">
           <UButton size="xs" color="primary" variant="soft" label="Approve" icon="i-lucide-check" @click="updateStatus(opt.id, 'approved')" />
           <UButton size="xs" color="neutral" variant="ghost" label="Dismiss" icon="i-lucide-x" @click="updateStatus(opt.id, 'dismissed')" />
         </div>
-        <div v-else-if="opt.status === 'approved'" class="mt-4 flex gap-2 border-t border-[var(--ui-border)] pt-3">
+        <div v-else-if="loggedIn && opt.status === 'approved'" class="mt-4 flex gap-2 border-t border-[var(--ui-border)] pt-3">
           <UButton size="xs" color="success" variant="soft" label="Mark Implemented" icon="i-lucide-check-check" @click="updateStatus(opt.id, 'implemented')" />
         </div>
       </UCard>

@@ -14,6 +14,7 @@ interface Budget {
 }
 
 const { data, status, refresh } = await useFetch<{ budgets: Budget[] }>('/api/budgets')
+const { loggedIn } = useUserSession()
 
 const showForm = ref(false)
 const saving = ref(false)
@@ -73,6 +74,7 @@ function fmt(n: string | number) {
         </p>
       </div>
       <UButton
+        v-if="loggedIn"
         icon="i-lucide-plus"
         label="New Budget"
         @click="showForm = !showForm"
@@ -80,7 +82,7 @@ function fmt(n: string | number) {
     </div>
 
     <!-- Create budget form -->
-    <UCard v-if="showForm" class="metric-card-budget">
+    <UCard v-if="showForm && loggedIn" class="metric-card-budget">
       <form @submit.prevent="createBudget" class="space-y-4">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -145,7 +147,8 @@ function fmt(n: string | number) {
       <UIcon name="i-lucide-wallet" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
       <p class="mt-3 font-medium text-[var(--ui-text-muted)]">No budgets configured</p>
       <p class="mt-1 text-sm text-[var(--ui-text-dimmed)]">Create a budget to start receiving spending alerts via email and WhatsApp.</p>
-      <UButton class="mt-4" icon="i-lucide-plus" label="Create Your First Budget" @click="showForm = true" />
+      <UButton v-if="loggedIn" class="mt-4" icon="i-lucide-plus" label="Create Your First Budget" @click="showForm = true" />
+      <p v-else class="mt-3 text-sm text-[var(--ui-text-dimmed)]">Login to manage budgets.</p>
     </div>
 
     <!-- Budget list -->
@@ -166,6 +169,7 @@ function fmt(n: string | number) {
             <p class="mt-0.5 text-xs text-[var(--ui-text-dimmed)]">per month</p>
           </div>
           <UButton
+            v-if="loggedIn"
             icon="i-lucide-trash-2"
             variant="ghost"
             size="xs"
@@ -187,7 +191,8 @@ function fmt(n: string | number) {
             :variant="threshold.active ? 'solid' : 'outline'"
             :color="threshold.active ? 'primary' : 'neutral'"
             :label="threshold.label"
-            @click="toggleThreshold(budget, threshold.field)"
+            :disabled="!loggedIn"
+            @click="loggedIn && toggleThreshold(budget, threshold.field)"
           />
         </div>
       </UCard>

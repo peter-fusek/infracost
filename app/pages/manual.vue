@@ -36,6 +36,7 @@ const state = reactive<FormState>({
   notes: '',
 })
 
+const { loggedIn } = useUserSession()
 const toast = useToast()
 const submitting = ref(false)
 
@@ -66,7 +67,13 @@ async function onSubmit(event: FormSubmitEvent<FormState>) {
       <p class="text-sm text-[var(--ui-text-muted)]">Record costs for platforms without API collection</p>
     </div>
 
-    <UCard>
+    <div v-if="!loggedIn" class="py-12 text-center">
+      <UIcon name="i-lucide-lock" class="mx-auto size-8 text-[var(--ui-text-dimmed)]" />
+      <p class="mt-3 font-medium text-[var(--ui-text-muted)]">Login required</p>
+      <p class="mt-1 text-sm text-[var(--ui-text-dimmed)]">You need to be logged in to add manual cost entries.</p>
+    </div>
+
+    <UCard v-else>
       <UForm :state="state" class="space-y-4" @submit="onSubmit">
         <UFormField label="Platform" name="platformSlug" required>
           <USelect
