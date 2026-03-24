@@ -113,7 +113,6 @@ export default defineEventHandler(async (event) => {
 
   // Build service breakdowns
   const allSvcBreakdowns: ServiceBreakdown[] = []
-  const platformCostExtras = new Map<number, number>() // platform-level costs
 
   for (const svc of allServices) {
     const estimate = parseFloat(svc.monthlyCostEstimate || '0')
@@ -152,10 +151,7 @@ export default defineEventHandler(async (event) => {
       const total = parseFloat(a.total || '0')
       if (total <= 0) continue
       const platformInfo = allServices.find(s => s.platformId === a.platformId)
-      if (!platformInfo) {
-        platformCostExtras.set(a.platformId, (platformCostExtras.get(a.platformId) ?? 0) + total)
-        continue
-      }
+      if (!platformInfo) continue
       const eom = progress > 0 ? total / progress : total
       allSvcBreakdowns.push({
         serviceId: -a.platformId, // negative ID for synthetic rows
@@ -179,6 +175,14 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Pre-build slug → platformId map for O(1) lookups
+  const slugToPlatformId = new Map<string, number>()
+  for (const svc of allServices) {
+    if (!slugToPlatformId.has(svc.platformSlug)) {
+      slugToPlatformId.set(svc.platformSlug, svc.platformId)
+    }
+  }
+
   // Group services by the chosen dimension
   const groups = new Map<string, GroupBreakdown>()
 
@@ -199,7 +203,7 @@ export default defineEventHandler(async (event) => {
 
     if (!groups.has(groupKey)) {
       const run = groupBy === 'platform'
-        ? runMap.get(allServices.find(s => s.platformSlug === groupKey)?.platformId ?? -1) as { completed_at: string | null; status: string } | undefined
+        ? runMap.get(slugToPlatformId.get(groupKey) ?? -1) as { completed_at: string | null; status: string } | undefined
         : undefined
       groups.set(groupKey, {
         key: groupKey,
@@ -222,18 +226,6 @@ export default defineEventHandler(async (event) => {
     group.totalEstimateUsd += svc.estimateUsd
     group.totalActualMtdUsd += svc.actualMtdUsd
     group.totalEomUsd += svc.eomUsd
-  }
-
-  // Add platform-level extras for platforms with NO services at all
-  if (groupBy === 'platform') {
-    for (const [platformId, extra] of platformCostExtras) {
-      const slug = allServices.find(s => s.platformId === platformId)?.platformSlug
-      if (slug && groups.has(slug)) {
-        const group = groups.get(slug)!
-        group.totalActualMtdUsd += extra
-        group.totalEomUsd += progress > 0 ? extra / progress : extra
-      }
-    }
   }
 
   // Finalize EUR totals and sort

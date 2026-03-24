@@ -80,27 +80,31 @@ const lastChecked = computed(() => {
   return dates.length ? new Date(Math.max(...dates.map(d => new Date(d!).getTime()))).toLocaleString() : null
 })
 
-function riskColor(level: string) {
-  if (level === 'depleted' || level === 'exceeded' || level === 'critical') return 'error'
-  if (level === 'warning') return 'warning'
-  if (level === 'ok') return 'success'
-  return 'neutral'
+const RISK_COLORS: Record<string, string> = {
+  depleted: 'error', exceeded: 'error', critical: 'error',
+  warning: 'warning', ok: 'success',
 }
+function riskColor(level: string): string { return RISK_COLORS[level] ?? 'neutral' }
 
-function riskIcon(level: string) {
-  if (level === 'depleted' || level === 'exceeded') return 'i-lucide-x-circle'
-  if (level === 'critical') return 'i-lucide-alert-triangle'
-  if (level === 'warning') return 'i-lucide-alert-circle'
-  if (level === 'ok') return 'i-lucide-check-circle'
-  return 'i-lucide-circle-dashed'
+const RISK_ICONS: Record<string, string> = {
+  depleted: 'i-lucide-x-circle', exceeded: 'i-lucide-x-circle',
+  critical: 'i-lucide-alert-triangle', warning: 'i-lucide-alert-circle',
+  ok: 'i-lucide-check-circle',
 }
+function riskIcon(level: string): string { return RISK_ICONS[level] ?? 'i-lucide-circle-dashed' }
 
-function barColor(level: string) {
-  if (level === 'exceeded' || level === 'critical' || level === 'depleted') return 'bg-[var(--ui-error)]'
-  if (level === 'warning') return 'bg-[var(--ui-warning)]'
-  if (level === 'ok') return 'bg-[var(--ui-success)]'
-  return 'bg-[var(--ui-text-dimmed)]'
+const BAR_COLORS: Record<string, string> = {
+  depleted: 'bg-[var(--ui-error)]', exceeded: 'bg-[var(--ui-error)]', critical: 'bg-[var(--ui-error)]',
+  warning: 'bg-[var(--ui-warning)]', ok: 'bg-[var(--ui-success)]',
 }
+function barColor(level: string): string { return BAR_COLORS[level] ?? 'bg-[var(--ui-text-dimmed)]' }
+
+const RISK_TEXT_CLASSES: Record<string, string> = {
+  ok: 'text-[var(--ui-success)]', warning: 'text-[var(--ui-warning)]',
+  critical: 'text-[var(--ui-error)]', depleted: 'text-[var(--ui-error)]',
+  exceeded: 'text-[var(--ui-error)]', unknown: 'text-[var(--ui-text-dimmed)]',
+}
+function riskTextClass(level: string): string { return RISK_TEXT_CLASSES[level] ?? '' }
 
 function fmt(n: number) { return n.toFixed(2) }
 
@@ -148,7 +152,7 @@ function depletionProgressPct(p: DepletionPlatform) {
 
     <!-- Countdown items -->
     <div v-else class="space-y-4">
-      <template v-for="item in items" :key="`${item.type}-${item.type === 'depletion' ? item.data.slug : item.data.slug}`">
+      <template v-for="item in items" :key="`${item.type}-${item.data.slug}`">
 
         <!-- Credit Depletion Card -->
         <UCard v-if="item.type === 'depletion'" class="metric-card-budget">
@@ -158,11 +162,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                 <UIcon
                   :name="riskIcon(item.data.riskLevel)"
                   class="size-6"
-                  :class="{
-                    'text-[var(--ui-success)]': item.data.riskLevel === 'ok',
-                    'text-[var(--ui-warning)]': item.data.riskLevel === 'warning',
-                    'text-[var(--ui-error)]': item.data.riskLevel === 'critical' || item.data.riskLevel === 'depleted',
-                  }"
+                  :class="riskTextClass(item.data.riskLevel)"
                 />
                 <div>
                   <h3 class="font-display text-lg font-bold">{{ item.data.name }}</h3>
@@ -175,11 +175,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                 </div>
               </div>
               <div class="text-right">
-                <p class="text-2xl font-bold tabular-nums" :class="{
-                  'text-[var(--ui-success)]': item.data.riskLevel === 'ok',
-                  'text-[var(--ui-warning)]': item.data.riskLevel === 'warning',
-                  'text-[var(--ui-error)]': item.data.riskLevel === 'critical' || item.data.riskLevel === 'depleted',
-                }">
+                <p class="text-2xl font-bold tabular-nums" :class="riskTextClass(item.data.riskLevel)">
                   {{ item.data.daysRemaining !== null ? `${item.data.daysRemaining} days` : 'N/A' }}
                 </p>
                 <p class="text-xs text-[var(--ui-text-dimmed)]">until depleted</p>
@@ -231,12 +227,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                 <UIcon
                   :name="riskIcon(item.data.worstRisk)"
                   class="size-5"
-                  :class="{
-                    'text-[var(--ui-success)]': item.data.worstRisk === 'ok',
-                    'text-[var(--ui-warning)]': item.data.worstRisk === 'warning',
-                    'text-[var(--ui-error)]': item.data.worstRisk === 'critical' || item.data.worstRisk === 'exceeded',
-                    'text-[var(--ui-text-dimmed)]': item.data.worstRisk === 'unknown',
-                  }"
+                  :class="riskTextClass(item.data.worstRisk)"
                 />
                 <div>
                   <h3 class="font-display text-lg font-bold">{{ item.data.name }}</h3>
@@ -263,11 +254,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                   <span class="text-[var(--ui-text-muted)]">
                     <template v-if="m.pct !== null">
                       {{ m.usedFormatted }} / {{ m.limitFormatted }}
-                      <span class="font-mono ml-1" :class="{
-                        'text-[var(--ui-success)]': m.riskLevel === 'ok',
-                        'text-[var(--ui-warning)]': m.riskLevel === 'warning',
-                        'text-[var(--ui-error)]': m.riskLevel === 'critical' || m.riskLevel === 'exceeded',
-                      }">
+                      <span class="font-mono ml-1" :class="riskTextClass(m.riskLevel)">
                         ({{ m.pct }}%)
                       </span>
                     </template>
