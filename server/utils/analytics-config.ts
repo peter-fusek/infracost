@@ -18,7 +18,7 @@ export interface ProjectAnalyticsConfig {
 // GA4 Property IDs from Google Analytics (instarea.sk account: 319689036, BudgetCo: 388351377)
 // Service account: homegrif-reports@homegrif-analytics.iam.gserviceaccount.com
 export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
-  { slug: 'infracost', ga4PropertyId: null, gscSiteUrl: 'https://infracost.eu' }, // no GA4 property yet — uses GTM tag only
+  { slug: 'infracost', ga4PropertyId: '529880367', gscSiteUrl: 'https://infracost.eu' },
   { slug: 'homegrif.com', ga4PropertyId: '516113889', gscSiteUrl: 'https://homegrif.com' },
   { slug: 'oncoteam', ga4PropertyId: '529091873', gscSiteUrl: 'https://dashboard.oncoteam.cloud' },
   { slug: 'oncofiles', ga4PropertyId: null, gscSiteUrl: 'https://oncofiles.com' },
