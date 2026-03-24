@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { alerts } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
+  await requireUserSession(event)
   const id = parseId(getRouterParam(event, 'id'))
   const body = await readBody(event)
   const db = useDB()

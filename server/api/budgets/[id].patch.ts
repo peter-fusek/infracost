@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { budgets } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
+  await requireUserSession(event)
   const id = parseId(getRouterParam(event, 'id'))
   const body = await readBody(event)
   const { name, monthlyLimit, alertAt50, alertAt75, alertAt90, alertAt100, isActive } = body as {

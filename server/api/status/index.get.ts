@@ -1,5 +1,5 @@
-/** Live status of all monitored services from UptimeRobot */
-export default defineEventHandler(async () => {
+/** Live status of all monitored services from UptimeRobot — cached 2min to prevent API abuse */
+export default defineCachedEventHandler(async () => {
   const config = useRuntimeConfig()
   if (!config.uptimeRobotApiKey) {
     throw createError({ statusCode: 503, message: 'UPTIMEROBOT_API_KEY not configured' })
@@ -71,4 +71,4 @@ export default defineEventHandler(async () => {
     allUp: upCount === monitors.length,
     monitors,
   }
-})
+}, { maxAge: 120 }) // 2 minutes
