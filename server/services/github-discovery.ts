@@ -163,8 +163,8 @@ async function detectTechStack(fullName: string, token: string): Promise<string[
   const total = Object.values(languages).reduce((a, b) => a + b, 0)
 
   return Object.entries(languages)
-    .filter(([lang, bytes]) => bytes / total > 0.05 && LANGUAGE_MAP[lang])
-    .map(([lang]) => LANGUAGE_MAP[lang])
+    .filter(([lang, bytes]) => bytes / total > 0.05 && lang in LANGUAGE_MAP)
+    .map(([lang]) => LANGUAGE_MAP[lang]!)
 }
 
 function normalizeRepoUrl(url: string): string {
