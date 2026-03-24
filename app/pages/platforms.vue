@@ -291,8 +291,8 @@ function runStatusColor(status: string): string {
               <div v-if="loadingServices.has(platform.slug)" class="flex justify-center py-4">
                 <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-[var(--ui-text-muted)]" />
               </div>
-              <template v-else-if="serviceCache[platform.slug]?.length">
-                <table class="w-full text-sm">
+              <div v-else-if="serviceCache[platform.slug]?.length" class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[500px]">
                   <thead>
                     <tr class="text-left text-[var(--ui-text-muted)]">
                       <th class="pb-2 font-medium">Service</th>
@@ -326,7 +326,7 @@ function runStatusColor(status: string): string {
                     View in breakdown
                   </NuxtLink>
                 </div>
-              </template>
+              </div>
               <p v-else class="text-sm text-[var(--ui-text-muted)] py-2">No active services</p>
             </template>
 
@@ -335,8 +335,8 @@ function runStatusColor(status: string): string {
               <div v-if="loadingRuns.has(platform.slug)" class="flex justify-center py-4">
                 <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-[var(--ui-text-muted)]" />
               </div>
-              <template v-else-if="runsCache[platform.slug]?.length">
-                <table class="w-full text-sm">
+              <div v-else-if="runsCache[platform.slug]?.length" class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[600px]">
                   <thead>
                     <tr class="text-left text-[var(--ui-text-muted)]">
                       <th class="pb-2 font-medium">Time</th>
@@ -364,7 +364,7 @@ function runStatusColor(status: string): string {
                     </tr>
                   </tbody>
                 </table>
-              </template>
+              </div>
               <p v-else class="text-sm text-[var(--ui-text-muted)] py-2">No collection runs recorded</p>
             </template>
           </div>

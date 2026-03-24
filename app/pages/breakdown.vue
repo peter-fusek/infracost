@@ -269,6 +269,8 @@ function sortIndicator(key: ServiceSortKey): string {
     </div>
 
     <template v-else-if="data">
+      <StaleDataBanner :last-collected-at="data.lastUpdatedAt" />
+
       <!-- Toolbar: sort, filter, search -->
       <div class="flex flex-wrap items-center gap-3">
         <USelectMenu
@@ -381,8 +383,8 @@ function sortIndicator(key: ServiceSortKey): string {
           </div>
 
           <!-- Expanded service detail -->
-          <div v-if="expanded.has(group.key)" class="mt-4 border-t border-[var(--ui-border)] pt-4" @click.stop>
-            <table class="w-full text-sm">
+          <div v-if="expanded.has(group.key)" class="mt-4 border-t border-[var(--ui-border)] pt-4 overflow-x-auto" @click.stop>
+            <table class="w-full text-sm min-w-[700px]">
               <thead>
                 <tr class="text-left text-[var(--ui-text-muted)]">
                   <th class="pb-2 font-medium cursor-pointer hover:text-[var(--ui-text)] select-none" @click="toggleServiceSort('name')">Service{{ sortIndicator('name') }}</th>

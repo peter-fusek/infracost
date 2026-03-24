@@ -82,6 +82,7 @@ interface Alert {
 }
 
 const { data: activeAlerts, refresh: refreshAlerts } = await useFetch<Alert[]>('/api/alerts', { lazy: true })
+const { data: collectionStatus } = await useFetch<{ lastCollectedAt: string | null }>('/api/collection-status', { lazy: true })
 
 const { collecting, triggerCollection } = useCollectionTrigger(async () => {
   await refresh()
@@ -90,6 +91,20 @@ const { collecting, triggerCollection } = useCollectionTrigger(async () => {
 
 function fmt(n: number | undefined) {
   return (n ?? 0).toFixed(2)
+}
+
+// Alert management
+const toast = useToast()
+
+async function updateAlert(id: number, newStatus: 'acknowledged' | 'resolved') {
+  try {
+    await $fetch(`/api/alerts/${id}`, { method: 'PATCH', body: { status: newStatus } })
+    await refreshAlerts()
+    toast.add({ title: `Alert ${newStatus}`, color: 'success' })
+  }
+  catch {
+    toast.add({ title: 'Failed to update alert', color: 'error' })
+  }
 }
 
 const budgetColor = computed(() => {
@@ -315,19 +330,27 @@ const platforms = [
         </UCard>
       </div>
 
-      <!-- Budget alerts -->
+      <StaleDataBanner v-if="collectionStatus" :last-collected-at="collectionStatus.lastCollectedAt" />
+
+      <!-- Active alerts -->
       <div v-if="activeAlerts?.length" class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-display font-bold text-sm">Active Alerts</h3>
+          <UBadge :color="activeAlerts.some(a => a.severity === 'critical') ? 'error' : 'warning'" variant="solid" size="xs">
+            {{ activeAlerts.length }}
+          </UBadge>
+        </div>
         <div
           v-for="alert in activeAlerts"
           :key="alert.id"
-          class="flex items-center justify-between rounded-lg border px-4 py-3"
+          class="flex items-center justify-between gap-3 rounded-lg border px-4 py-3"
           :class="{
             'border-[var(--ui-error)] bg-[var(--ui-error)]/5': alert.severity === 'critical',
             'border-[var(--ui-warning)] bg-[var(--ui-warning)]/5': alert.severity === 'warning',
             'border-[var(--ui-info)] bg-[var(--ui-info)]/5': alert.severity === 'info',
           }"
         >
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 min-w-0">
             <UIcon
               :name="alert.severity === 'critical' ? 'i-lucide-alert-triangle' : alert.severity === 'warning' ? 'i-lucide-alert-circle' : 'i-lucide-info'"
               class="size-5 shrink-0"
@@ -337,11 +360,33 @@ const platforms = [
                 'text-[var(--ui-info)]': alert.severity === 'info',
               }"
             />
-            <span class="text-sm">{{ alert.message }}</span>
+            <div class="min-w-0">
+              <p class="text-sm truncate">{{ alert.message }}</p>
+              <p class="text-xs text-[var(--ui-text-dimmed)]">{{ timeAgo(alert.createdAt) }}</p>
+            </div>
           </div>
-          <UBadge :color="alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info'" variant="subtle" size="xs">
-            {{ alert.severity }}
-          </UBadge>
+          <div class="flex items-center gap-2 shrink-0">
+            <UBadge :color="alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : ('info' as any)" variant="subtle" size="xs">
+              {{ alert.severity }}
+            </UBadge>
+            <template v-if="loggedIn">
+              <UButton
+                v-if="alert.status === 'pending'"
+                icon="i-lucide-eye"
+                size="xs"
+                variant="ghost"
+                title="Acknowledge"
+                @click="updateAlert(alert.id, 'acknowledged')"
+              />
+              <UButton
+                icon="i-lucide-check"
+                size="xs"
+                variant="ghost"
+                title="Resolve"
+                @click="updateAlert(alert.id, 'resolved')"
+              />
+            </template>
+          </div>
         </div>
       </div>
 
