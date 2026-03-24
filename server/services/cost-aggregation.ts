@@ -27,6 +27,8 @@ export interface PlatformCost {
   eomEstimateEur: number
   recordCount: number
   services: ServiceCost[]
+  fixedMtd: number
+  usageMtd: number
 }
 
 export interface MTDSummary {
@@ -159,8 +161,8 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
   byPlatform.sort((a, b) => b.mtd - a.mtd)
 
   const totalMTD = byPlatform.reduce((sum, p) => sum + p.mtd, 0)
-  const totalFixed = byPlatform.reduce((sum, p) => sum + (p as any).fixedMtd, 0)
-  const totalUsage = byPlatform.reduce((sum, p) => sum + (p as any).usageMtd, 0)
+  const totalFixed = byPlatform.reduce((sum, p) => sum + p.fixedMtd, 0)
+  const totalUsage = byPlatform.reduce((sum, p) => sum + p.usageMtd, 0)
   const eomEstimate = totalFixed + (progress > 0 ? totalUsage / progress : 0)
 
   // Get budget limit
