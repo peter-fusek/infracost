@@ -115,7 +115,7 @@ export const serviceSeed = [
   { platformSlug: 'github', name: 'instarea-sk (org)', project: null, serviceType: 'repository', monthlyCostEstimate: '0.00' },
   { platformSlug: 'github', name: 'Actions: homegrif_com', project: 'homegrif.com', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 390 runs, free tier
   { platformSlug: 'github', name: 'Actions: grandpa_check', project: 'grandpa_check', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 363 runs, free tier
-  { platformSlug: 'github', name: 'Actions: robota', project: 'robota', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 653 runs, free tier
+  // robota removed — project no longer exists
 ]
 
 // Default global budget — updated 2026-03-24 to reflect actual ~$800/mo with Claude dual accounts
@@ -135,7 +135,6 @@ export const projectSeed = [
   { slug: 'pulseshape', name: 'PulseShape', description: 'Health data visualization', repoUrl: 'https://github.com/instarea-sk/pulseshape', productionUrl: 'https://pulseshape.com', techStack: ['vue', 'python', 'gcp'], status: 'active' as const },
   { slug: 'grandpa_check', name: 'Grandpa Check', description: 'Elderly wellness check-in system', repoUrl: 'https://github.com/instarea-sk/grandpa_check', productionUrl: null, techStack: ['python', 'github-actions'], status: 'active' as const },
   { slug: 'replica.city', name: 'Replica City', description: '3D city replica visualization', repoUrl: 'https://github.com/instarea-sk/replica-city', productionUrl: null, techStack: ['javascript', 'three.js'], status: 'paused' as const },
-  { slug: 'robota', name: 'Robota', description: 'Automation workflows', repoUrl: 'https://github.com/instarea-sk/robota', productionUrl: null, techStack: ['python', 'github-actions'], status: 'paused' as const },
   { slug: 'instarea', name: 'Instarea', description: 'Company website', repoUrl: 'https://github.com/instarea-sk/instareaweb', productionUrl: 'https://instarea.com', techStack: ['nuxt', 'render'], status: 'paused' as const },
   { slug: 'personal', name: 'Personal (Claude)', description: 'Personal Claude Max account', repoUrl: null, productionUrl: null, techStack: ['claude'], status: 'active' as const },
 ]

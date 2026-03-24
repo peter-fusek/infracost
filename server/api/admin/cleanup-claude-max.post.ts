@@ -10,18 +10,16 @@ export default defineEventHandler(async () => {
   const db = useDB()
 
   // 1. Soft-delete duplicate/stale Claude Max services
-  const duplicateNames = [
-    'Max Subscription',
-    'Extra Usage Credits',
-    'Team Subscription (instarea)',
-    'Extra Usage (instarea)',
-  ]
-
   const deleted = await db.execute(sql`
     update services
     set is_active = false, deleted_at = now()
     where platform_id = (select id from platforms where slug = 'claude-max')
-      and name = any(${duplicateNames})
+      and name in (
+        ${'Max Subscription'},
+        ${'Extra Usage Credits'},
+        ${'Team Subscription (instarea)'},
+        ${'Extra Usage (instarea)'}
+      )
       and is_active = true
     returning id, name
   `)
@@ -59,10 +57,24 @@ export default defineEventHandler(async () => {
     returning id
   `)
 
+  // 3. Soft-delete robota project and its services
+  const robotaProject = await db.execute(sql`
+    update projects set is_active = false, deleted_at = now()
+    where slug = 'robota' and is_active = true
+    returning id, slug
+  `)
+  const robotaServices = await db.execute(sql`
+    update services set is_active = false, deleted_at = now()
+    where project = 'robota' and is_active = true
+    returning id, name
+  `)
+
   return {
     deletedServices: deleted.rows,
     reassignedSubscription: subReassign.rows.length,
     reassignedUsage: usageReassign.rows.length,
-    message: 'Claude Max cleanup complete',
+    robotaProject: robotaProject.rows,
+    robotaServices: robotaServices.rows,
+    message: 'Cleanup complete: Claude Max duplicates removed, robota project archived',
   }
 })

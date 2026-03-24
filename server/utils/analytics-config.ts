@@ -27,7 +27,7 @@ export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
   { slug: 'pulseshape', ga4PropertyId: '494047490', gscSiteUrl: 'https://pulseshape.com' },
   { slug: 'instarea', ga4PropertyId: null, gscSiteUrl: 'https://instarea.com' },
   { slug: 'scrabsnap', ga4PropertyId: '529720507', gscSiteUrl: null },
-  { slug: 'robota', ga4PropertyId: '519954768', gscSiteUrl: null },
+  // robota removed — project no longer exists
 ]
 
 export function getAnalyticsConfig(slug: string): ProjectAnalyticsConfig | undefined {
