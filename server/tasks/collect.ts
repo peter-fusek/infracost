@@ -13,6 +13,7 @@ import { createUptimeRobotCollector } from '../collectors/uptimerobot'
 import { checkBudgetAlerts } from '../services/budget-alerts'
 import { checkPlanLimitAlerts } from '../services/plan-limit-alerts'
 import { detectDrift, persistDriftAlerts } from '../services/drift-detector'
+import { detectAnomalies, persistAnomalyAlerts } from '../services/anomaly-detector'
 
 export default defineTask({
   meta: {
@@ -164,6 +165,18 @@ export default defineTask({
       console.error('[collect] Drift detection failed:', driftError)
     }
 
-    return { result: results, alerts: newAlerts, limitAlerts, drifts, driftAlertCount, errors: { alertsError, limitAlertsError, driftError } }
+    // Run anomaly detection
+    let anomalies: Awaited<ReturnType<typeof detectAnomalies>> = []
+    let anomalyError: string | null = null
+    try {
+      anomalies = await detectAnomalies(db)
+      await persistAnomalyAlerts(db, anomalies, config as unknown as Record<string, string>)
+    }
+    catch (err) {
+      anomalyError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Anomaly detection failed:', anomalyError)
+    }
+
+    return { result: results, alerts: newAlerts, limitAlerts, drifts, driftAlertCount, anomalies, errors: { alertsError, limitAlertsError, driftError, anomalyError } }
   },
 })

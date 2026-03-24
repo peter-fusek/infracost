@@ -39,11 +39,16 @@
 - EUR conversion: server/utils/currency.ts (EUR_USD_RATE, toEur) — update monthly
 - Bug issue markdown: server/utils/bug-report-markdown.ts (buildBugIssueBody, BugContext type)
 - Collection trigger: app/composables/useCollectionTrigger.ts — shared composable for all refresh buttons
+- CSV export: app/composables/useCsvExport.ts — client-side CSV generation + download
 - Shared formatters: app/utils/time.ts (timeAgo), app/utils/icons.ts (typeIcons) — auto-imported by Nuxt
 - Fetch timeouts: AbortSignal.timeout(15_000) on all external calls, 30s for Railway GraphQL
+- Retry: server/utils/retry.ts — withRetry() + fetchWithRetry() with exponential backoff for transient failures
 - Error handling: always surface errors in errors[] array, never empty catch blocks
 - Collection dedup: delete old records before inserting new per platform+period
-- Test suite: `pnpm test` — vitest, tests in tests/ directory
+- Breakdown: sort groups (name/cost/variance), filter by project, search services, sortable column headers
+- Platforms: expandable with Services + Collection Runs tabs (lazy-loaded)
+- Trends: per-platform MoM % change in detail table
+- Test suite: `pnpm test` — vitest, tests in tests/ directory (57 tests)
 
 ## Deploy
 - Render Starter tier ($7/mo), auto-deploy on push to main

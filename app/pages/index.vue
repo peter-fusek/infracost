@@ -2,8 +2,8 @@
 useSeoMeta({
   title: 'InfraCost — Track All Your Infrastructure Costs in One Dashboard',
   ogTitle: 'InfraCost — Track All Your Infrastructure Costs in One Dashboard',
-  description: 'Track spending across 9 cloud and AI platforms — Render, Railway, Anthropic, Neon, Turso and more — with budget alerts, drift detection, depletion forecasts, and collection freshness tracking. USD + EUR.',
-  ogDescription: 'Automated cost tracking across Render, Railway, Anthropic API, Neon, Turso, Resend, UptimeRobot, GCP. Budget alerts, depletion forecasts, drift detection. Secured with Google OAuth.',
+  description: 'Track spending across 12 cloud and AI platforms — Render, Railway, Anthropic, Claude Max, Neon, Turso, and more — with budget alerts, drift detection, depletion forecasts, GitHub auto-discovery, and CSV export. USD + EUR.',
+  ogDescription: 'Automated cost tracking across 12 platforms including Render, Railway, Anthropic, Claude Max, GCP. Budget alerts, drift detection, depletion forecasts, anomaly detection, GitHub auto-discovery. Secured with Google OAuth.',
   ogType: 'website',
   ogSiteName: 'InfraCost',
   ogUrl: 'https://infracost.eu',
@@ -25,7 +25,7 @@ useHead({
         url: 'https://infracost.eu',
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
-        description: 'Infrastructure cost tracking dashboard for cloud and AI platforms with automated collectors, budget alerts, and depletion forecasts.',
+        description: 'Infrastructure cost tracking dashboard for 12 cloud and AI platforms with automated collectors, budget alerts, drift detection, depletion forecasts, and anomaly detection.',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       }),
     },
@@ -102,33 +102,33 @@ const budgetColor = computed(() => {
 const features = [
   {
     icon: 'i-lucide-radio-tower',
-    title: '9 Platforms, 1 View',
-    description: 'Automated API collectors pull live costs from Render, Railway, Anthropic, Neon, Turso, Resend, UptimeRobot, GCP, and Websupport every day.',
+    title: '12 Platforms, 1 View',
+    description: 'API collectors pull live costs from Render, Railway, Anthropic, Claude Max, Neon, Turso, Resend, UptimeRobot, GCP, GitHub, Google Services, and Websupport.',
   },
   {
     icon: 'i-lucide-bell-ring',
-    title: 'Budget Alerts',
-    description: 'Threshold-based alerts at 50%, 75%, 90%, and 100% of your budget. Notifications via email and WhatsApp before you overspend.',
+    title: 'Budget & Anomaly Alerts',
+    description: 'Threshold alerts at 50-100% of budget plus anomaly detection for unusual spending spikes. Email and WhatsApp notifications.',
   },
   {
     icon: 'i-lucide-battery-warning',
-    title: 'Depletion Forecasts',
-    description: 'Know exactly when your prepaid API credits run out. Daily burn rate and runway projections for Anthropic, Railway, and others.',
+    title: 'Countdown Dashboard',
+    description: 'Credits, plan limits, and free tier expirations — all urgency-sorted in one view. Know when your Anthropic credits run dry or your free DB expires.',
   },
   {
     icon: 'i-lucide-git-compare',
-    title: 'Drift Detection',
-    description: 'Compares live API service lists against your inventory daily. New services, removed services, and status changes surfaced automatically.',
+    title: 'Drift Detection + GitHub Discovery',
+    description: 'Daily scans compare live services against your registry. Auto-discover untracked GitHub repos with deployment indicators. Change history timeline per project.',
   },
   {
-    icon: 'i-lucide-activity',
-    title: 'Collection Freshness',
-    description: 'Every platform shows when data was last collected with green/yellow/red status indicators. Know instantly if any collector is stale or failing.',
+    icon: 'i-lucide-download',
+    title: 'Sort, Filter & Export',
+    description: 'Breakdown by platform or project with sorting, filtering, and search. CSV exports for offline analysis. Per-platform month-over-month trends.',
   },
   {
     icon: 'i-lucide-shield-check',
-    title: 'Secured by Default',
-    description: 'Google OAuth with email allowlist protects all write operations. Read-only dashboard stays public. All API calls timeout-protected with 15s limits.',
+    title: 'Resilient & Secure',
+    description: 'Google OAuth with email allowlist. Collector retry with exponential backoff. Collection run history. 15s API timeouts. All data in USD and EUR.',
   },
 ]
 
@@ -136,11 +136,14 @@ const platforms = [
   { name: 'Render', type: 'hosting' },
   { name: 'Railway', type: 'hosting' },
   { name: 'Anthropic', type: 'ai' },
+  { name: 'Claude Max', type: 'ai' },
   { name: 'Neon', type: 'database' },
   { name: 'Turso', type: 'database' },
   { name: 'Resend', type: 'email' },
   { name: 'UptimeRobot', type: 'monitoring' },
   { name: 'GCP', type: 'cloud' },
+  { name: 'GitHub', type: 'ci_cd' },
+  { name: 'Google Services', type: 'analytics' },
   { name: 'Websupport', type: 'domain' },
 ]
 </script>
@@ -159,7 +162,7 @@ const platforms = [
           </h1>
         </div>
         <p class="animate-fade-in-up mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-[var(--ui-text-muted)]" style="animation-delay: 100ms">
-          Automated cost tracking across 9 cloud and AI platforms. Budget alerts before you overspend. Depletion forecasts before your credits run dry. Collection freshness you can trust. USD and EUR.
+          Automated cost tracking across 12 platforms. Budget alerts before you overspend. Drift detection when infrastructure changes. GitHub auto-discovery for untracked projects. CSV exports. USD and EUR.
         </p>
         <div class="animate-fade-in-up mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center" style="animation-delay: 200ms">
           <UButton
