@@ -16,14 +16,25 @@
 - Bug reporter: app/components/BugReportButton.vue + app/composables/useBugReport.ts → server/api/bugs.post.ts (needs GITHUB_TOKEN env var)
   - Screenshot: user paste (Ctrl+V) or file upload only — NEVER auto-capture DOM content
   - No DOM-scraping libraries (html2canvas etc.) — injection surface
+- GitHub Discovery: server/services/github-discovery.ts — scans peter-fusek/* + instarea-sk/* repos, detects deployment indicators + tech stacks
+  - POST /api/projects/discover (auth-gated) triggers scan, compares against project registry
+  - Ignored repos: autoniq, osa, marketlocator, smartbill, servicehub, .github
+- Drift Detection: server/services/drift-detector.ts — Render, Railway, GitHub project registry checks
+  - Drift results persisted as alerts (alertType: drift_*) with 24h dedup + audit_log for history
+  - GET /api/drift returns live drift check results
+  - GET /api/projects/[slug]/changes returns change history timeline from audit_log
+- Free Tier Expiry: server/utils/free-tier-expiry.ts — tracks known expiration dates for free services
+  - GET /api/expiry returns expiry statuses with risk levels
 - Pages: 9 total (/, /breakdown, /trends, /optimizations, /countdown, /status, /platforms, /budgets, /manual)
-  - /countdown = merged Depletion + Limits — urgency-sorted credits + plan limits
+  - /countdown = merged Depletion + Limits + Free Tier Expiry — urgency-sorted
+  - /status = UptimeRobot monitors + Projects grid (expandable with change timeline) + Drift alerts + GitHub Discovery (auth-gated)
+  - Project cards: clickable expand with change history, yellow ring for "recently changed" (7 days)
   - /depletion, /limits redirect 301 → /countdown
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
 - Input validation: server/utils/validation.ts (parseId, parseAmount, parsePagination)
-- Notifications: server/utils/notifications.ts (sendAlertEmail, sendWhatsApp) — shared by budget + plan limit alerts
+- Notifications: server/utils/notifications.ts (sendAlertEmail, sendWhatsApp) — shared by budget + plan limit + drift alerts
 - Plan limits: server/utils/plan-limits.ts (PLAN_LIMITS, extractUsage, formatUsage, formatLimit)
 - EUR conversion: server/utils/currency.ts (EUR_USD_RATE, toEur) — update monthly
 - Bug issue markdown: server/utils/bug-report-markdown.ts (buildBugIssueBody, BugContext type)
@@ -35,7 +46,7 @@
 - Test suite: `pnpm test` — vitest, tests in tests/ directory
 
 ## Deploy
-- Render free tier, auto-deploy on push to main
+- Render Starter tier ($7/mo), auto-deploy on push to main
 - Build: `pnpm install && pnpm drizzle-kit push && pnpm build`
 - Domain: infracost.eu (Websupport DNS → Render)
 - Env vars: all API keys in Render dashboard, never in code

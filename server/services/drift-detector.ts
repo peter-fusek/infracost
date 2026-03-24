@@ -1,20 +1,24 @@
-import { eq, isNull, and } from 'drizzle-orm'
-import { services, platforms } from '../db/schema'
+import { eq, isNull, and, gte } from 'drizzle-orm'
+import { services, platforms, alerts, projects, auditLog } from '../db/schema'
+import { sendAlertEmail, sendWhatsApp } from '../utils/notifications'
 
 /**
  * Infrastructure drift detector.
  * Compares live API service lists against DB inventory.
  * Reports: new services, removed services, status changes.
+ * Persists drift items as alerts for audit trail.
  */
 
-interface DriftItem {
+export interface DriftItem {
   type: 'new' | 'removed' | 'changed'
   platform: string
   name: string
   detail: string
 }
 
-export async function detectDrift(db: ReturnType<typeof import('../utils/db').useDB>, config: Record<string, string>): Promise<DriftItem[]> {
+type DB = ReturnType<typeof import('../utils/db').useDB>
+
+export async function detectDrift(db: DB, config: Record<string, string>): Promise<DriftItem[]> {
   const drifts: DriftItem[] = []
 
   // Check Render services
@@ -119,5 +123,142 @@ export async function detectDrift(db: ReturnType<typeof import('../utils/db').us
     }
   }
 
+  // Check GitHub project registry — verify registered repos still exist
+  if (config.githubToken) {
+    try {
+      const allProjects = await db
+        .select({ slug: projects.slug, repoUrl: projects.repoUrl })
+        .from(projects)
+        .where(and(eq(projects.isActive, true), isNull(projects.deletedAt)))
+
+      for (const project of allProjects) {
+        if (!project.repoUrl) continue
+
+        // Extract owner/repo from URL
+        const match = project.repoUrl.match(/github\.com\/([^/]+\/[^/]+)/)
+        if (!match) continue
+
+        const repoPath = match[1]
+        try {
+          const response = await fetch(`https://api.github.com/repos/${repoPath}`, {
+            headers: {
+              'Authorization': `Bearer ${config.githubToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            signal: AbortSignal.timeout(15_000),
+          })
+
+          if (response.status === 404) {
+            drifts.push({
+              type: 'removed',
+              platform: 'GitHub',
+              name: project.slug,
+              detail: `Repo ${repoPath} not found (deleted or renamed?)`,
+            })
+          }
+          else if (response.ok) {
+            const repo = await response.json() as { archived: boolean }
+            if (repo.archived) {
+              drifts.push({
+                type: 'changed',
+                platform: 'GitHub',
+                name: project.slug,
+                detail: `Repo ${repoPath} is archived`,
+              })
+            }
+          }
+        }
+        catch {
+          // Individual repo check failure — not critical
+        }
+      }
+    }
+    catch (err) {
+      console.error('[drift-detector] GitHub check failed:', err instanceof Error ? err.message : err)
+    }
+  }
+
   return drifts
+}
+
+/**
+ * Persist drift items as alerts + audit log entries.
+ * Deduplicates against existing recent alerts (24h window).
+ * Sends notifications for removed services.
+ * Audit log entries link to projects for change history timeline.
+ */
+export async function persistDriftAlerts(db: DB, drifts: DriftItem[], config: Record<string, string>): Promise<number> {
+  if (drifts.length === 0) return 0
+
+  // Load recent drift alerts for dedup
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const recentAlerts = await db
+    .select({ alertType: alerts.alertType })
+    .from(alerts)
+    .where(and(gte(alerts.createdAt, since), eq(alerts.isActive, true)))
+  const recentTypes = new Set(recentAlerts.map(a => a.alertType))
+
+  // Build service→project lookup for linking events to projects
+  const allServices = await db
+    .select({ name: services.name, project: services.project })
+    .from(services)
+    .where(and(eq(services.isActive, true), isNull(services.deletedAt)))
+  const serviceProjectMap = new Map(allServices.filter(s => s.project).map(s => [s.name, s.project!]))
+
+  let created = 0
+
+  for (const drift of drifts) {
+    const alertType = `drift_${drift.type}_${drift.platform.toLowerCase()}_${drift.name}`
+
+    if (recentTypes.has(alertType)) continue
+
+    const severity = drift.type === 'removed' ? 'warning' as const
+      : drift.type === 'new' ? 'info' as const
+      : 'info' as const
+
+    const message = `[${drift.platform}] ${drift.type === 'new' ? 'New' : drift.type === 'removed' ? 'Removed' : 'Changed'}: ${drift.name} — ${drift.detail}`
+
+    // Resolve project slug — GitHub drifts use project slug directly, others via service name
+    const projectSlug = drift.platform === 'GitHub'
+      ? drift.name
+      : serviceProjectMap.get(drift.name) ?? null
+
+    await db.insert(alerts).values({
+      severity,
+      alertType,
+      message,
+    })
+
+    // Record in audit log for change history timeline
+    await db.insert(auditLog).values({
+      action: `drift_${drift.type}`,
+      entityType: 'service',
+      actorType: 'system',
+      details: {
+        platform: drift.platform,
+        service: drift.name,
+        project: projectSlug,
+        detail: drift.detail,
+      },
+    })
+    created++
+
+    // Send notifications for removed services (potential cost impact)
+    if (drift.type === 'removed' && config.resendApiKey) {
+      try {
+        await sendAlertEmail(message, severity, `Drift: ${drift.platform} service removed`, config)
+        await sendWhatsApp(message, config)
+      }
+      catch {
+        console.error(`[drift-detector] Notification failed for ${drift.name}`)
+      }
+    }
+  }
+
+  if (created > 0) {
+    console.log(`[drift-detector] Created ${created} drift alert(s)`)
+  }
+
+  return created
 }

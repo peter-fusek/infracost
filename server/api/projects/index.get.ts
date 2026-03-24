@@ -34,6 +34,19 @@ export default defineEventHandler(async () => {
 
   const statsMap = new Map(projectStats.rows.map(r => [r.project, r]))
 
+  // Get recent change counts per project (last 7 days) from audit_log
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000)
+  const recentChanges = await db.execute<{ project: string; change_count: number }>(sql`
+    select details->>'project' as project, count(*)::int as change_count
+    from audit_log
+    where entity_type = 'service'
+      and action like 'drift_%'
+      and created_at >= ${sevenDaysAgo}
+      and details->>'project' is not null
+    group by details->>'project'
+  `)
+  const changesMap = new Map(recentChanges.rows.map(r => [r.project, r.change_count]))
+
   const result = allProjects.map((p) => {
     const stats = statsMap.get(p.slug)
     const mtd = parseFloat(stats?.mtd_usd || '0')
@@ -45,6 +58,7 @@ export default defineEventHandler(async () => {
       mtdEur: toEur(mtd),
       estimateUsd: Math.round(estimate * 100) / 100,
       estimateEur: toEur(estimate),
+      recentChanges: changesMap.get(p.slug) ?? 0,
     }
   })
 

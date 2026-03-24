@@ -31,13 +31,26 @@ interface PlatformLimits {
   worstRisk: 'ok' | 'warning' | 'critical' | 'exceeded' | 'unknown'
 }
 
+interface ExpiryItem {
+  platform: string
+  service: string
+  expiresAt: string
+  description: string
+  impact: string
+  monthlyAfter: number | null
+  daysUntil: number
+  risk: 'expired' | 'critical' | 'warning' | 'ok'
+}
+
 // Unified item types
 type CountdownItem =
   | { type: 'depletion'; urgency: number; data: DepletionPlatform }
   | { type: 'limit'; urgency: number; data: PlatformLimits }
+  | { type: 'expiry'; urgency: number; data: ExpiryItem }
 
 const { data: depletionData, status: depletionStatus } = await useFetch<{ platforms: DepletionPlatform[]; checkedAt: string }>('/api/depletion')
 const { data: limitsData, status: limitsStatus } = await useFetch<{ platforms: PlatformLimits[]; checkedAt: string }>('/api/limits')
+const { data: expiryData } = await useFetch<{ items: ExpiryItem[]; urgentCount: number }>('/api/expiry')
 const { loggedIn } = useUserSession()
 const { collecting, triggerCollection } = useCollectionTrigger(async () => {
   await refreshNuxtData()
@@ -47,7 +60,7 @@ const loading = computed(() => depletionStatus.value === 'pending' || limitsStat
 
 // Risk to urgency score (lower = more urgent)
 function riskToUrgency(risk: string): number {
-  const scores: Record<string, number> = { depleted: 0, exceeded: 1, critical: 2, warning: 3, ok: 4, unknown: 5 }
+  const scores: Record<string, number> = { depleted: 0, expired: 0, exceeded: 1, critical: 2, warning: 3, ok: 4, unknown: 5 }
   return scores[risk] ?? 5
 }
 
@@ -67,6 +80,12 @@ const items = computed<CountdownItem[]>(() => {
     }
   }
 
+  if (expiryData.value) {
+    for (const e of expiryData.value.items) {
+      result.push({ type: 'expiry', urgency: riskToUrgency(e.risk), data: e })
+    }
+  }
+
   result.sort((a, b) => a.urgency - b.urgency)
   return result
 })
@@ -81,13 +100,13 @@ const lastChecked = computed(() => {
 })
 
 const RISK_COLORS: Record<string, string> = {
-  depleted: 'error', exceeded: 'error', critical: 'error',
+  depleted: 'error', expired: 'error', exceeded: 'error', critical: 'error',
   warning: 'warning', ok: 'success',
 }
 function riskColor(level: string): string { return RISK_COLORS[level] ?? 'neutral' }
 
 const RISK_ICONS: Record<string, string> = {
-  depleted: 'i-lucide-x-circle', exceeded: 'i-lucide-x-circle',
+  depleted: 'i-lucide-x-circle', expired: 'i-lucide-x-circle', exceeded: 'i-lucide-x-circle',
   critical: 'i-lucide-alert-triangle', warning: 'i-lucide-alert-circle',
   ok: 'i-lucide-check-circle',
 }
@@ -102,7 +121,8 @@ function barColor(level: string): string { return BAR_COLORS[level] ?? 'bg-[var(
 const RISK_TEXT_CLASSES: Record<string, string> = {
   ok: 'text-[var(--ui-success)]', warning: 'text-[var(--ui-warning)]',
   critical: 'text-[var(--ui-error)]', depleted: 'text-[var(--ui-error)]',
-  exceeded: 'text-[var(--ui-error)]', unknown: 'text-[var(--ui-text-dimmed)]',
+  expired: 'text-[var(--ui-error)]', exceeded: 'text-[var(--ui-error)]',
+  unknown: 'text-[var(--ui-text-dimmed)]',
 }
 function riskTextClass(level: string): string { return RISK_TEXT_CLASSES[level] ?? '' }
 
@@ -216,6 +236,54 @@ function depletionProgressPct(p: DepletionPlatform) {
                 <p class="font-mono font-medium">${{ fmt(item.data.dailyBurnRate * 30) }}/mo</p>
               </div>
             </div>
+          </div>
+        </UCard>
+
+        <!-- Free Tier Expiry Card -->
+        <UCard v-else-if="item.type === 'expiry'" class="metric-card-budget">
+          <div class="space-y-3">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <UIcon
+                  :name="riskIcon(item.data.risk)"
+                  class="size-6"
+                  :class="riskTextClass(item.data.risk)"
+                />
+                <div>
+                  <h3 class="font-display text-lg font-bold">{{ item.data.service }}</h3>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <UBadge :color="(riskColor(item.data.risk) as any)" variant="subtle" size="xs">
+                      {{ item.data.risk === 'ok' ? 'Healthy' : item.data.risk }}
+                    </UBadge>
+                    <UBadge variant="outline" size="xs" color="neutral">free tier expiry</UBadge>
+                    <UBadge variant="subtle" size="xs" color="neutral">{{ item.data.platform }}</UBadge>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-2xl font-bold tabular-nums" :class="riskTextClass(item.data.risk)">
+                  {{ item.data.daysUntil <= 0 ? 'Expired' : `${item.data.daysUntil}d` }}
+                </p>
+                <p class="text-xs text-[var(--ui-text-dimmed)]">
+                  {{ item.data.daysUntil <= 0 ? 'action needed' : 'until expiry' }}
+                </p>
+              </div>
+            </div>
+
+            <p class="text-sm text-[var(--ui-text-muted)]">{{ item.data.description }}</p>
+
+            <div class="rounded border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2">
+              <p class="text-xs text-[var(--ui-text-muted)]">
+                <span class="font-medium">Impact:</span> {{ item.data.impact }}
+              </p>
+              <p v-if="item.data.monthlyAfter" class="text-xs text-[var(--ui-text-muted)] mt-1">
+                <span class="font-medium">Cost after:</span> ${{ item.data.monthlyAfter.toFixed(2) }}/mo
+              </p>
+            </div>
+
+            <p class="text-xs text-[var(--ui-text-dimmed)]">
+              Expires: {{ new Date(item.data.expiresAt).toLocaleDateString() }}
+            </p>
           </div>
         </UCard>
 

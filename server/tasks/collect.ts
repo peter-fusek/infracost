@@ -12,7 +12,7 @@ import { createTursoCollector } from '../collectors/turso'
 import { createUptimeRobotCollector } from '../collectors/uptimerobot'
 import { checkBudgetAlerts } from '../services/budget-alerts'
 import { checkPlanLimitAlerts } from '../services/plan-limit-alerts'
-import { detectDrift } from '../services/drift-detector'
+import { detectDrift, persistDriftAlerts } from '../services/drift-detector'
 
 export default defineTask({
   meta: {
@@ -151,17 +151,19 @@ export default defineTask({
       console.error('[collect] Plan limit alerts check failed:', limitAlertsError)
     }
 
-    // Run drift detection
+    // Run drift detection + persist alerts
     let drifts: Awaited<ReturnType<typeof detectDrift>> = []
+    let driftAlertCount = 0
     let driftError: string | null = null
     try {
       drifts = await detectDrift(db, config as unknown as Record<string, string>)
+      driftAlertCount = await persistDriftAlerts(db, drifts, config as unknown as Record<string, string>)
     }
     catch (err) {
       driftError = err instanceof Error ? err.message : String(err)
       console.error('[collect] Drift detection failed:', driftError)
     }
 
-    return { result: results, alerts: newAlerts, limitAlerts, drifts, errors: { alertsError, limitAlertsError, driftError } }
+    return { result: results, alerts: newAlerts, limitAlerts, drifts, driftAlertCount, errors: { alertsError, limitAlertsError, driftError } }
   },
 })
