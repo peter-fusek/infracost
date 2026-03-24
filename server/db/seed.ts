@@ -81,7 +81,7 @@ export const serviceSeed = [
   { platformSlug: 'resend', name: 'Email Sending', project: 'homegrif.com', serviceType: 'api_usage', monthlyCostEstimate: '0.00' },
 
   // Turso
-  { platformSlug: 'turso', name: 'oncofiles-db', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'turso', name: 'erika-files-mcp', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' }, // 16.8M rows read, 26.87 MB storage
 
   // UptimeRobot
   { platformSlug: 'uptimerobot', name: 'Monitoring (10 monitors)', project: null, serviceType: 'monitoring', monthlyCostEstimate: '0.00' },
