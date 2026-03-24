@@ -1,19 +1,19 @@
 import { platforms, services, budgets, optimizations } from './schema'
 
 // Platform seed data — full service inventory
+// Updated 2026-03-24: added Google services, removed unused OpenAI/Twilio
 export const platformSeed = [
   { slug: 'render', name: 'Render', type: 'hosting', collectionMethod: 'hybrid' as const, billingCycle: 'monthly', apiConfigKey: 'renderApiKey' },
   { slug: 'railway', name: 'Railway', type: 'hosting', collectionMethod: 'api' as const, billingCycle: 'usage', apiConfigKey: 'railwayApiToken' },
   { slug: 'anthropic', name: 'Anthropic Claude API', type: 'ai', collectionMethod: 'api' as const, billingCycle: 'usage', apiConfigKey: 'anthropicAdminApiKey' },
   { slug: 'claude-max', name: 'Claude Max', type: 'ai', collectionMethod: 'manual' as const, billingCycle: 'monthly' },
-  { slug: 'openai', name: 'OpenAI/ChatGPT', type: 'ai', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'resend', name: 'Resend', type: 'email', collectionMethod: 'api' as const, billingCycle: 'usage' },
-  { slug: 'twilio', name: 'Twilio', type: 'sms', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'turso', name: 'Turso', type: 'database', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'neon', name: 'Neon', type: 'database', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'gcp', name: 'Google Cloud', type: 'cloud', collectionMethod: 'api' as const, billingCycle: 'usage' },
+  { slug: 'google-services', name: 'Google Services', type: 'analytics', collectionMethod: 'manual' as const, billingCycle: 'monthly' },
   { slug: 'websupport', name: 'Websupport', type: 'domain', collectionMethod: 'manual' as const, billingCycle: 'annual' },
-  { slug: 'github-actions', name: 'GitHub Actions', type: 'ci_cd', collectionMethod: 'api' as const, billingCycle: 'usage' },
+  { slug: 'github', name: 'GitHub', type: 'ci_cd', collectionMethod: 'api' as const, billingCycle: 'usage' },
   { slug: 'uptimerobot', name: 'UptimeRobot', type: 'monitoring', collectionMethod: 'api' as const, billingCycle: 'monthly', apiConfigKey: 'uptimeRobotApiKey' },
 ] as const
 
@@ -106,6 +106,19 @@ export const serviceSeed = [
   { platformSlug: 'websupport', name: 'pulseshape.com', project: 'pulseshape', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'instarea.com', project: 'instarea', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'instarea.sk', project: 'instarea', serviceType: 'domain', monthlyCostEstimate: '0.58' },
+
+  // Google Services (free tier — $0, tracked for complete infra picture)
+  { platformSlug: 'google-services', name: 'GA4 (G-QVK3BVWXWV)', project: 'infracost', serviceType: 'analytics', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'google-services', name: 'Google Tag Manager', project: 'infracost', serviceType: 'analytics', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'google-services', name: 'Google Search Console', project: 'infracost', serviceType: 'analytics', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'google-services', name: 'Google OAuth (GCP)', project: null, serviceType: 'auth', monthlyCostEstimate: '0.00' },
+
+  // GitHub — repos + Actions (free tier for public, 2000 min/mo for private)
+  { platformSlug: 'github', name: 'peter-fusek (personal)', project: null, serviceType: 'repository', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'github', name: 'instarea-sk (org)', project: null, serviceType: 'repository', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'github', name: 'Actions: homegrif_com', project: 'homegrif.com', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 390 runs, free tier
+  { platformSlug: 'github', name: 'Actions: grandpa_check', project: 'grandpa_check', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 363 runs, free tier
+  { platformSlug: 'github', name: 'Actions: robota', project: 'robota', serviceType: 'ci_cd', monthlyCostEstimate: '0.00' }, // 653 runs, free tier
 ]
 
 // Default global budget — updated 2026-03-24 to reflect actual ~$800/mo with Claude dual accounts
@@ -113,175 +126,161 @@ export const budgetSeed = [
   { name: 'Total Infrastructure', platformId: null, monthlyLimit: '850.00' },
 ]
 
-// Optimization opportunities — from March 2026 audit
-// Each has pros/cons in the description for actionable decision-making
+// Optimization opportunities — regenerated 2026-03-24 after infrastructure audit
+// Reflects: merged projects, dual Claude Max accounts, corrected GCP costs, consolidated test envs
 export const optimizationSeed = [
   {
-    title: 'Recreate 6 over-provisioned Render DBs with 1GB disk',
-    description: `**Current:** 6 databases provisioned at 15GB disk (~$10.70/mo each).
-**Target:** Recreate with 1GB disk (~$6.42/mo each).
+    title: 'Review Claude Max dual-account spend (~$638/mo combined)',
+    description: `**Current:** Two Claude Max accounts totaling ~$638/mo:
+- Personal (gmail): Max $196/mo + ~$29 extra usage = ~$225/mo
+- Instarea: Team 5 seats $297/mo + ~$116 extra usage = ~$413/mo
 
-**PROS:**
-- Saves ~$25.68/mo ($308/yr, ~€23.62/mo)
-- Biggest single optimization available
-- No performance impact (actual data uses <100MB per DB)
-
-**CONS:**
-- Cannot resize in-place — must create new DB, migrate data, update connection strings
-- Requires downtime per DB (~15min each, 6 DBs = ~90min total)
-- Risk of missed connection string updates breaking services
-- DBs affected: homegrif-db-test, oncoteam-db-prod, oncoteam-db-test, partners-db-prod, partners-db-test, scrabsnap-db`,
-    platformSlug: 'render',
-    estimatedSavings: '25.68',
-    effort: 'medium' as const,
-    suggestedBy: 'ai' as const,
-  },
-  {
-    title: 'Review Claude Max subscription necessity (€180/mo)',
-    description: `**Current:** Claude Max plan at €180/mo (~$196/mo) — upgraded from Pro €18/mo around Mar 6.
-**Alternative:** Downgrade to Pro €18/mo + rely on API credits for heavy usage.
-
-**PROS:**
-- Saves up to €162/mo (~$178/mo, $2,136/yr) — largest single cost item
-- Pro plan sufficient for light conversational use
-- API usage ($65/mo) already covers programmatic needs
+**PROS of consolidating:**
+- Could save $196/mo by dropping personal Max → use instarea Team seat instead
+- Instarea Team already has capacity (2 available seats)
+- Extra usage caps could be managed centrally
 
 **CONS:**
-- Max plan provides 5x higher rate limits and priority access
-- May hit rate limits on Pro during intensive development sessions
-- Extra Usage credits (€50/mo) would no longer be available
-- Development velocity could decrease if hitting API limits
+- Personal account needed for non-instarea work (oncoteam, personal projects)
+- Mixing personal/business billing complicates accounting
+- May need separate accounts for compliance
 
-**VERDICT:** Only worth downgrading if development pace slows. Monitor actual Max usage patterns first.`,
+**ACTION:** Evaluate if personal Max can downgrade to Pro ($18/mo) — saves $178/mo. Use instarea Team seat for heavy AI work.`,
     platformSlug: 'claude-max',
     estimatedSavings: '178.00',
     effort: 'trivial' as const,
     suggestedBy: 'ai' as const,
   },
   {
-    title: 'Investigate partners-cz-prod Standard tier usage',
-    description: `**Current:** partners-cz-prod using Standard plan ($0.0336/hr) for part of the month + Starter ($0.0094/hr) for the rest — ~$13.18/mo projected.
-**Target:** Ensure it stays on Starter plan ($0.0094/hr) — ~$7.13/mo.
+    title: 'Reduce Claude extra usage spending (~$145/mo combined)',
+    description: `**Current:** Combined extra usage across both accounts:
+- Personal: €26.43/€30 cap (88% used in March)
+- Instarea: €106.43/€300 cap (35% used in March)
+- Total: ~$145/mo on top of subscriptions
+
+**PROS:**
+- Lowering spend caps saves money when usage is within plan limits
+- Most heavy usage may not need extra credits if workflows are optimized
+- Could save $50-100/mo by reducing caps and optimizing usage
+
+**CONS:**
+- May hit rate limits during intensive development sprints
+- Extra usage enables Claude Code heavy sessions without interruption
+- Productivity loss may exceed cost savings
+
+**ACTION:** Monitor actual extra usage patterns for 2 months. If consistently under cap, reduce spending limits.`,
+    platformSlug: 'claude-max',
+    estimatedSavings: '75.00',
+    effort: 'trivial' as const,
+    suggestedBy: 'ai' as const,
+  },
+  {
+    title: 'Resize 4 over-provisioned Render DBs (homegrif.com project)',
+    description: `**Current:** homegrif.com project has 4 Render databases:
+- homegrif-db-test ($10.70) — 15GB disk, <100MB actual data
+- partners-db-prod ($10.70) — 15GB disk
+- partners-db-test ($10.70) — 15GB disk
+- scrabsnap-db ($10.70) — 15GB disk
+**Target:** Recreate with 1GB disk (~$6.42/mo each).
+
+**PROS:**
+- Saves ~$17.12/mo ($205/yr)
+- No performance impact — actual data well under 1GB per DB
+
+**CONS:**
+- Cannot resize in-place — must create new DB, migrate, update connection strings
+- ~15min downtime per DB migration
+- Risk of missed connection string updates
+
+**ACTION:** Start with test DBs (lowest risk), then prod after verifying approach.`,
+    platformSlug: 'render',
+    estimatedSavings: '17.12',
+    effort: 'medium' as const,
+    suggestedBy: 'ai' as const,
+  },
+  {
+    title: 'Lock partners-cz-prod on Starter tier',
+    description: `**Current:** partners-cz-prod (now under homegrif.com) using Standard plan part-month — ~$13.18/mo.
+**Target:** Lock on Starter tier — ~$7.13/mo.
 
 **PROS:**
 - Saves ~$6/mo ($72/yr)
 - Starter tier sufficient for current traffic levels
-- No migration required — just plan change
 
 **CONS:**
-- Standard tier provides 1 vCPU + 2GB RAM (vs 0.5 vCPU + 512MB on Starter)
-- May have been upgraded for a reason (traffic spike, memory pressure)
-- Need to verify current RAM/CPU utilization before downgrading
+- Standard provides more CPU/RAM for traffic spikes
+- Need to verify utilization before downgrading
 
-**ACTION:** Check Render metrics for partners-cz-prod. If P95 memory <400MB, safe to lock on Starter.`,
+**ACTION:** Check Render metrics. If P95 memory <400MB, lock on Starter.`,
     platformSlug: 'render',
     estimatedSavings: '6.00',
     effort: 'trivial' as const,
     suggestedBy: 'ai' as const,
   },
   {
-    title: 'Enable Anthropic API auto-reload to prevent outage',
-    description: `**Current:** $27.98 credits remaining as of Mar 14. Auto-reload is DISABLED.
-**Risk:** Credits will run out in ~2 weeks at current burn rate ($65/mo), causing API outage for all services using Claude API.
+    title: 'Consolidate Websupport domains (18 domains, ~$124/yr)',
+    description: `**Current:** 18 domains across Websupport at ~€6.90/yr each = ~€124/yr (~$11/mo).
+Some may be unused or redundant:
+- replica.city has 4 domains (repli.city, replica.city, goreplicity.com, goreplicacity.com)
+- seekwhy has 2 domains (getwhysurvey.com, getsurveylink.com)
+- shiftrotation.com — project status unclear
 
 **PROS:**
-- Prevents unexpected API outage
-- Zero cost (auto-reload just adds credits, doesn't increase spend)
-- Required for production reliability
+- Dropping 4-6 unused domains saves ~€28-41/yr
+- Reduces renewal tracking overhead
 
 **CONS:**
-- Enables automatic spending (could spike if usage anomaly)
-- No built-in spend cap on Anthropic platform
-- Need to monitor monthly usage manually
+- Domain squatting risk if dropped and re-registered by others
+- Some may be needed for future projects
 
-**ACTION:** Enable auto-reload with $50 threshold. Add monthly usage alert.`,
-    platformSlug: 'anthropic',
-    estimatedSavings: '0.00',
+**ACTION:** Review each domain's DNS records and traffic. Drop domains with no A/CNAME records and no visitors.`,
+    platformSlug: 'websupport',
+    estimatedSavings: '3.00',
     effort: 'trivial' as const,
     suggestedBy: 'ai' as const,
   },
   {
-    title: 'Monitor Render pipeline minutes to avoid overage',
-    description: `**Current:** 476/500 free minutes used at day 14 (95.2%). Overage: $5/1000 min.
-**Risk:** Will exceed 500 min this month. New services (budgetco, contacts-refiner, oncoteam) driving more builds.
+    title: 'Automate manual platform collection (5 platforms)',
+    description: `**Current:** 5 platforms still show "never" collected or rely on manual entries:
+- Claude Max: manual (both accounts)
+- GCP: placeholder collector, actual cost from PulseShape Backups
+- Websupport: manual (18 domains)
+- GitHub: no collector
+- Google Services: manual ($0)
 
 **PROS:**
-- Avoids $5-10/mo overage charges
-- Forces build discipline (fewer unnecessary deploys)
-- Can enable "auto-deploy on push" selectively
+- Eliminates monthly manual update burden
+- More accurate real-time cost tracking
+- Catches unexpected cost spikes automatically
 
 **CONS:**
-- Restricting builds slows development iteration
-- May need to manually trigger deploys
-- Alternative: accept small overage as cost of faster iteration
+- Development effort for each collector
+- Some platforms have no billing API (Claude Max, Websupport)
+- GCP requires BigQuery billing export setup
 
-**ACTION:** Disable auto-deploy on test environments. Use manual deploys for non-critical services. Consider merging PRs less frequently.`,
+**ACTION:** Priority order: GCP (BigQuery export), GitHub (API exists), then browser-scrape solutions for Claude Max.`,
     platformSlug: 'render',
-    estimatedSavings: '5.00',
-    effort: 'small' as const,
-    suggestedBy: 'ai' as const,
-  },
-  {
-    title: 'Migrate infracost app from Render to Railway',
-    description: `**Current:** infracost on Render free web + Basic-256mb DB ($6.42/mo).
-**Target:** Railway Hobby plan ($5/mo) already running — add infracost there.
-
-**PROS:**
-- Saves ~$1.42/mo on DB (Railway DB may be cheaper or free within plan)
-- Reduces Render pipeline pressure (fewer build minutes consumed)
-- Consolidates infrastructure monitoring tool on a second platform (reduces single-vendor risk)
-- Railway Hobby plan already being paid for
-
-**CONS:**
-- Migration effort: need to set up Railway service, migrate DB, update DNS
-- Railway Hobby plan has limits (8GB RAM, 8 vCPU total across all services)
-- May conflict with oncofiles and oncoteam resources on same plan
-- Render free web tier is actually $0 — only the DB costs money
-
-**VERDICT:** Small savings but good for pipeline pressure. Defer until pipeline overage becomes recurring.`,
-    platformSlug: 'render',
-    estimatedSavings: '1.42',
-    effort: 'medium' as const,
-    suggestedBy: 'ai' as const,
-  },
-  {
-    title: 'Consolidate test environments (share DBs or use branching)',
-    description: `**Current:** Each project has prod + test web service + prod + test DB = 4x cost.
-Example: homegrif has homegrif_com ($7.13) + homegrif_com-test ($7.13) + homegrif-db ($6.42) + homegrif-db-test ($10.70) = $31.38/mo
-
-**PROS:**
-- Could save $20-40/mo by sharing test DBs or using Neon branching (free tier)
-- Neon already has homegrif-neon and scrabsnap-neon instances
-- Test DBs don't need persistence or high availability
-
-**CONS:**
-- Shared test DBs can cause data conflicts between developers
-- Neon branching has cold-start latency (~1-2s)
-- Migration effort per project
-- Need to ensure test data isolation
-
-**ACTION:** For projects with Neon instances, migrate test environments to Neon branching. Keep prod DBs on Render.`,
-    platformSlug: 'render',
-    estimatedSavings: '30.00',
+    estimatedSavings: '0.00',
     effort: 'large' as const,
     suggestedBy: 'ai' as const,
   },
   {
-    title: 'Remove deleted Render services still accruing charges',
-    description: `**Current:** robota ($0.21) and robota-test ($0.21) show as "Deleted" but still charged in March billing.
+    title: 'Migrate infracost DB from Render to Railway',
+    description: `**Current:** infracost on Render free web + Basic-256mb DB ($6.42/mo).
+**Target:** Move DB to Railway Hobby plan (already paid, $5/mo includes DB).
 
 **PROS:**
-- Saves $0.42/mo (minor)
-- Cleans up billing noise
+- Saves ~$1.42/mo net
+- Reduces Render bill complexity
 
 **CONS:**
-- None — these are already deleted services
-- Charges should stop automatically next billing cycle
+- Migration effort + downtime
+- Railway has shared resource limits across all services
 
-**ACTION:** Verify in April billing that charges stopped. If not, contact Render support.`,
+**VERDICT:** Defer until Railway capacity is confirmed sufficient.`,
     platformSlug: 'render',
-    estimatedSavings: '0.42',
-    effort: 'trivial' as const,
+    estimatedSavings: '1.42',
+    effort: 'medium' as const,
     suggestedBy: 'ai' as const,
   },
 ]
