@@ -43,6 +43,7 @@ export const serviceSeed = [
   { platformSlug: 'render', name: 'partners-db-test', project: 'homegrif.com', serviceType: 'database', monthlyCostEstimate: '10.70' },
   { platformSlug: 'render', name: 'scrabsnap-db', project: 'scrabsnap', serviceType: 'database', monthlyCostEstimate: '10.70' },
   { platformSlug: 'render', name: 'budgetco-db', project: 'budgetco', serviceType: 'database', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'render', name: 'infracost', project: 'infracost', serviceType: 'web', monthlyCostEstimate: '7.00' }, // Starter plan, upgraded from free 2026-03-24
   { platformSlug: 'render', name: 'infracost-db', project: 'infracost', serviceType: 'database', monthlyCostEstimate: '6.42' },
   { platformSlug: 'render', name: 'oncoteam-db-prod', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' }, // SUSPENDED — migrated to Railway
   { platformSlug: 'render', name: 'oncoteam-db-test', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' }, // SUSPENDED
