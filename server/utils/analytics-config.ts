@@ -15,16 +15,19 @@ export interface ProjectAnalyticsConfig {
 
 // Map project slugs to their analytics properties
 // Update these when adding GA4 or GSC to a project
+// GA4 Property IDs from Google Analytics (instarea.sk account: 319689036, BudgetCo: 388351377)
+// Service account: homegrif-reports@homegrif-analytics.iam.gserviceaccount.com
 export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
-  { slug: 'infracost', ga4PropertyId: null, gscSiteUrl: 'https://infracost.eu' },
-  { slug: 'homegrif.com', ga4PropertyId: null, gscSiteUrl: 'https://homegrif.com' },
-  { slug: 'oncoteam', ga4PropertyId: null, gscSiteUrl: 'https://dashboard.oncoteam.cloud' },
+  { slug: 'infracost', ga4PropertyId: null, gscSiteUrl: 'https://infracost.eu' }, // no GA4 property yet — uses GTM tag only
+  { slug: 'homegrif.com', ga4PropertyId: '516113889', gscSiteUrl: 'https://homegrif.com' },
+  { slug: 'oncoteam', ga4PropertyId: '529091873', gscSiteUrl: 'https://dashboard.oncoteam.cloud' },
   { slug: 'oncofiles', ga4PropertyId: null, gscSiteUrl: 'https://oncofiles.com' },
   { slug: 'contacts-refiner', ga4PropertyId: null, gscSiteUrl: 'https://contactrefiner.com' },
-  { slug: 'budgetco', ga4PropertyId: null, gscSiteUrl: null },
-  { slug: 'pulseshape', ga4PropertyId: null, gscSiteUrl: 'https://pulseshape.com' },
+  { slug: 'budgetco', ga4PropertyId: null, gscSiteUrl: null }, // BudgetCo GA4 account 388351377 — property ID TBD
+  { slug: 'pulseshape', ga4PropertyId: '494047490', gscSiteUrl: 'https://pulseshape.com' },
   { slug: 'instarea', ga4PropertyId: null, gscSiteUrl: 'https://instarea.com' },
-  { slug: 'scrabsnap', ga4PropertyId: null, gscSiteUrl: null },
+  { slug: 'scrabsnap', ga4PropertyId: '529720507', gscSiteUrl: null },
+  { slug: 'robota', ga4PropertyId: '519954768', gscSiteUrl: null },
 ]
 
 export function getAnalyticsConfig(slug: string): ProjectAnalyticsConfig | undefined {
