@@ -16,7 +16,9 @@
 - Bug reporter: app/components/BugReportButton.vue + app/composables/useBugReport.ts → server/api/bugs.post.ts (needs GITHUB_TOKEN env var)
   - Screenshot: user paste (Ctrl+V) or file upload only — NEVER auto-capture DOM content
   - No DOM-scraping libraries (html2canvas etc.) — injection surface
-- Pages: 10 total (/, /breakdown, /trends, /platforms, /limits, /depletion, /optimizations, /status, /budgets, /manual)
+- Pages: 9 total (/, /breakdown, /trends, /optimizations, /countdown, /status, /platforms, /budgets, /manual)
+  - /countdown = merged Depletion + Limits — urgency-sorted credits + plan limits
+  - /depletion, /limits redirect 301 → /countdown
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
@@ -46,3 +48,6 @@
 - Depletion balances stored in .data/credit-balances.json (not DB) — distinguish ENOENT from corruption
 - Resend collector: paginated email counting capped at 10 pages to prevent API overdrawing
 - Collection trigger: module-level rate limit (2min) and concurrent run guard — resets on deploy
+- Breakdown: NULL-serviceId cost records shown as synthetic "Unallocated" service rows (not hidden)
+- Seed data: projects merged (partners+homegrif → homegrif.com), Claude Max split into personal+instarea accounts
+- Countdown page uses Record<string,string> lookup maps for risk→color/icon instead of if-chains
