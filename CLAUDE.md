@@ -9,7 +9,7 @@
 
 ## Architecture
 - Nuxt 4 + @nuxt/ui v4 + Tailwind CSS v4 + Drizzle ORM + node-postgres
-- DB: Render PostgreSQL. Schema at server/db/schema.ts
+- DB: Railway PostgreSQL (migrated from Render 2026-03-25). Schema at server/db/schema.ts
 - Collectors: server/collectors/*.ts — each returns CollectorResult { records, errors, accountIdentifier? }
 - Collect task: server/tasks/collect.ts — daily cron at 06:00 UTC + manual trigger via POST /api/collect/trigger (2min rate limit, concurrent run guard)
 - Auth: nuxt-auth-utils + Google OAuth. Middleware at server/middleware/auth.ts protects POST/PATCH/DELETE (except /api/bugs)
@@ -58,12 +58,12 @@
 
 ## Deploy
 - Render Starter tier ($7/mo), auto-deploy on push to main
-- Build: `pnpm install && pnpm drizzle-kit push && pnpm build`
+- Build: `pnpm install && pnpm drizzle-kit push && pnpm build` (drizzle-kit push runs against Railway PostgreSQL via DATABASE_URL)
 - Domain: infracost.eu (Websupport DNS → Render)
 - Env vars: all API keys in Render dashboard, never in code
 
 ## Gotchas
-- drizzle-kit push needs DATABASE_URL — only works on Render (in build command), not locally without the env var
+- drizzle-kit push needs DATABASE_URL — runs in Render build command against Railway PostgreSQL, not available locally without the env var
 - Render free tier: no blueprint support for custom domains — must use dashboard
 - defineCachedEventHandler for Nitro caching (used on /api/platforms/status, 5min TTL)
 - collectionRuns insert AFTER key check to avoid orphaned "running" records
