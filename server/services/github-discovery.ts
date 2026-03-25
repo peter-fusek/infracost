@@ -4,18 +4,12 @@
  * and tech stacks, then compares against the project registry to flag untracked repos.
  */
 
+import { githubHeaders } from '../utils/github'
+
 const GITHUB_ACCOUNTS = [
   { owner: 'peter-fusek', type: 'user' as const },
   { owner: 'instarea-sk', type: 'org' as const },
 ]
-
-function githubHeaders(token: string): Record<string, string> {
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  }
-}
 
 // Repos to skip — external/client projects not managed by us
 const IGNORED_REPOS = new Set([

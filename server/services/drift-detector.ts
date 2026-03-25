@@ -1,6 +1,7 @@
 import { eq, isNull, and, gte } from 'drizzle-orm'
 import { services, platforms, alerts, projects, auditLog } from '../db/schema'
 import { sendAlertEmail, sendWhatsApp } from '../utils/notifications'
+import { githubHeaders } from '../utils/github'
 
 /**
  * Infrastructure drift detector.
@@ -147,11 +148,7 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
         const repoPath = match[1]
         try {
           const response = await fetch(`https://api.github.com/repos/${repoPath}`, {
-            headers: {
-              'Authorization': `Bearer ${config.githubToken}`,
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-            },
+            headers: githubHeaders(config.githubToken),
             signal: AbortSignal.timeout(15_000),
           })
 

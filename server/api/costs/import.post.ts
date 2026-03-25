@@ -1,4 +1,3 @@
-import { eq } from 'drizzle-orm'
 import { costRecords, platforms } from '../../db/schema'
 
 interface ImportRow {
@@ -26,6 +25,7 @@ export default defineEventHandler(async (event) => {
   const platformMap = new Map(allPlatforms.map(p => [p.slug, p]))
 
   const results: { inserted: number; errors: string[] } = { inserted: 0, errors: [] }
+  const toInsert: (typeof costRecords.$inferInsert)[] = []
 
   for (let i = 0; i < body.rows.length; i++) {
     const row = body.rows[i]
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
       const periodStart = new Date(recordDate.getFullYear(), recordDate.getMonth(), 1)
       const periodEnd = new Date(recordDate.getFullYear(), recordDate.getMonth() + 1, 0)
 
-      await db.insert(costRecords).values({
+      toInsert.push({
         platformId: platform.id,
         recordDate,
         periodStart,
@@ -56,14 +56,22 @@ export default defineEventHandler(async (event) => {
         amount: String(amt),
         currency: 'USD',
         costType: row.costType || 'usage',
-        collectionMethod: 'csv_import',
+        collectionMethod: 'csv_import' as const,
         notes: typeof row.notes === 'string' ? row.notes.slice(0, 2000) : undefined,
       })
-
-      results.inserted++
     }
     catch (err: any) {
       results.errors.push(`Row ${i + 1}: ${err.message || 'Unknown error'}`)
+    }
+  }
+
+  if (toInsert.length > 0) {
+    try {
+      await db.insert(costRecords).values(toInsert)
+      results.inserted = toInsert.length
+    }
+    catch (err: any) {
+      results.errors.push(`Bulk insert failed: ${err.message || 'Unknown error'}`)
     }
   }
 

@@ -52,6 +52,7 @@ const { data: depletionData, status: depletionStatus } = await useFetch<{ platfo
 const { data: limitsData, status: limitsStatus } = await useFetch<{ platforms: PlatformLimits[]; checkedAt: string }>('/api/limits')
 const { data: expiryData } = await useFetch<{ items: ExpiryItem[]; urgentCount: number }>('/api/expiry')
 const { loggedIn } = useUserSession()
+const toast = useToast()
 const { collecting, triggerCollection } = useCollectionTrigger(async () => {
   await refreshNuxtData()
 })
@@ -85,8 +86,8 @@ async function recordClaudeMaxSubscription() {
     await refreshSubCheck()
     await refreshNuxtData()
   }
-  catch {
-    // error handled by global error handler
+  catch (err: any) {
+    toast.add({ title: 'Failed to record subscription', description: err?.data?.message || 'Unknown error', color: 'error' })
   }
   finally {
     recordingSub.value = false

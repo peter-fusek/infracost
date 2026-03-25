@@ -54,11 +54,45 @@ const csvErrors = ref<string[]>([])
 const importing = ref(false)
 const showCsvPreview = ref(false)
 
+// Split a CSV line respecting quoted fields (RFC 4180)
+function splitCsvLine(line: string): string[] {
+  const cols: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"'
+        i++ // skip escaped quote
+      }
+      else if (ch === '"') {
+        inQuotes = false
+      }
+      else {
+        current += ch
+      }
+    }
+    else if (ch === '"') {
+      inQuotes = true
+    }
+    else if (ch === ',') {
+      cols.push(current.trim())
+      current = ''
+    }
+    else {
+      current += ch
+    }
+  }
+  cols.push(current.trim())
+  return cols
+}
+
 function parseCsv(text: string): CsvRow[] {
   const lines = text.trim().split('\n')
   if (lines.length < 2) return []
 
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+  const headers = splitCsvLine(lines[0]).map(h => h.toLowerCase())
   const slugIdx = headers.findIndex(h => h === 'platform' || h === 'platformslug')
   const amountIdx = headers.findIndex(h => h === 'amount')
   const typeIdx = headers.findIndex(h => h === 'costtype' || h === 'type' || h === 'cost_type')
@@ -68,7 +102,7 @@ function parseCsv(text: string): CsvRow[] {
   if (slugIdx === -1 || amountIdx === -1) return []
 
   return lines.slice(1).filter(l => l.trim()).map((line) => {
-    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+    const cols = splitCsvLine(line)
     return {
       platformSlug: cols[slugIdx] || '',
       amount: Number(cols[amountIdx]) || 0,
