@@ -135,7 +135,8 @@ export const projectSeed = [
   { slug: 'pulseshape', name: 'PulseShape', description: 'Health data visualization', repoUrl: 'https://github.com/instarea-sk/pulseshape', productionUrl: 'https://pulseshape.com', techStack: ['vue', 'python', 'gcp'], status: 'active' as const },
   { slug: 'grandpa_check', name: 'Grandpa Check', description: 'Elderly wellness check-in system', repoUrl: 'https://github.com/instarea-sk/grandpa_check', productionUrl: null, techStack: ['python', 'github-actions'], status: 'active' as const },
   { slug: 'replica.city', name: 'Replica City', description: '3D city replica visualization', repoUrl: 'https://github.com/instarea-sk/replica-city', productionUrl: null, techStack: ['javascript', 'three.js'], status: 'paused' as const },
-  { slug: 'instarea', name: 'Instarea', description: 'Company website', repoUrl: 'https://github.com/instarea-sk/instareaweb', productionUrl: 'https://instarea.com', techStack: ['nuxt', 'render'], status: 'paused' as const },
+  { slug: 'instarea', name: 'Instarea', description: 'Company website (instarea.com)', repoUrl: 'https://github.com/instarea-sk/instareaweb', productionUrl: 'https://instarea.com', techStack: ['nuxt', 'render'], status: 'paused' as const },
+  { slug: 'instarea.sk', name: 'Instarea SK', description: 'Future instarea.sk company page', repoUrl: 'https://github.com/instarea-sk/instareaweb', productionUrl: 'https://instarea.sk', techStack: ['nuxt', 'render'], status: 'active' as const },
   { slug: 'personal', name: 'Personal (Claude)', description: 'Personal Claude Max account', repoUrl: null, productionUrl: null, techStack: ['claude'], status: 'active' as const },
 ]
 
