@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Maximum 200 alerts per bulk update' })
   }
 
-  const parsedIds = ids.map((id: unknown) => parseId(id))
+  const parsedIds = ids.map((id: unknown) => parseId(String(id)))
 
   const updates: Record<string, unknown> = {}
   if (body.status === 'acknowledged' || body.status === 'resolved') {

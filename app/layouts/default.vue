@@ -18,7 +18,7 @@ const navigation = [
 ]
 
 // Pending alerts badge count
-const { data: pendingAlerts } = await useFetch<{ alerts: any[]; total: number }>('/api/alerts', { lazy: true })
+const { data: pendingAlerts } = await useFetch<{ alerts: any[]; total: number }>('/api/alerts', { query: { status: 'pending' }, lazy: true })
 const pendingAlertCount = computed(() => pendingAlerts.value?.total ?? 0)
 
 watch(() => route.path, () => {

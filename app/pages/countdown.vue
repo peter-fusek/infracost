@@ -240,7 +240,7 @@ function depletionProgressPct(p: DepletionPlatform) {
             </div>
           </div>
           <UButton
-            v-if="!r.currentMonthRecorded"
+            v-if="!r.currentMonthRecorded && r.expectedAmount !== null"
             icon="i-lucide-plus"
             label="Record"
             size="sm"
