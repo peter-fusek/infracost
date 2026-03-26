@@ -40,7 +40,7 @@ export default defineEventHandler(async () => {
     }
   }
 
-  // Seed budgets
+  // Seed budgets (upsert — update limit if it changed)
   for (const b of budgetSeed) {
     const existing = await db.select().from(budgets)
       .where(eq(budgets.name, b.name))
@@ -51,6 +51,9 @@ export default defineEventHandler(async () => {
         platformId: b.platformId,
         monthlyLimit: b.monthlyLimit,
       })
+      results.budgets++
+    } else if (existing[0].monthlyLimit !== b.monthlyLimit) {
+      await db.update(budgets).set({ monthlyLimit: b.monthlyLimit }).where(eq(budgets.id, existing[0].id))
       results.budgets++
     }
   }

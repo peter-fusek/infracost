@@ -8,7 +8,14 @@ import { sendAlertEmail, sendWhatsApp } from '../utils/notifications'
  * Alerts when spending exceeds the average by more than the threshold.
  */
 
-const ANOMALY_THRESHOLD_PCT = 20 // alert if >20% above 3-month average
+// Alert if EOM estimate exceeds 3-month rolling average by this percentage.
+// Current value (20%) is an initial default — revisit in Sprint 28 (June 2026)
+// once 3+ full months of collection data are available for meaningful tuning.
+const ANOMALY_THRESHOLD_PCT = 20
+
+// Minimum number of prior monthly data points needed before anomaly detection runs.
+// Prevents false positives from extrapolating a single partial month.
+const MIN_HISTORICAL_MONTHS = 2
 
 interface AnomalyResult {
   platform: string
@@ -21,12 +28,13 @@ interface AnomalyResult {
 type DB = ReturnType<typeof import('../utils/db').useDB>
 
 export async function detectAnomalies(db: DB): Promise<AnomalyResult[]> {
-  // Get per-platform: current month total + 3 prior months average
+  // Get per-platform: current month total + 3 prior months average + month count
   const rows = await db.execute<{
     slug: string
     name: string
     current_month: string
     avg_prior_3: string
+    prior_month_count: string
   }>(sql`
     with current_month as (
       select
@@ -42,7 +50,8 @@ export async function detectAnomalies(db: DB): Promise<AnomalyResult[]> {
     prior_months as (
       select
         p.slug,
-        coalesce(avg(monthly.total), 0) as avg_total
+        coalesce(avg(monthly.total), 0) as avg_total,
+        count(monthly.total) as month_count
       from platforms p
       left join lateral (
         select sum(cr.amount::numeric) as total
@@ -59,7 +68,8 @@ export async function detectAnomalies(db: DB): Promise<AnomalyResult[]> {
     select
       cm.slug, cm.name,
       cm.total as current_month,
-      coalesce(pm.avg_total, 0) as avg_prior_3
+      coalesce(pm.avg_total, 0) as avg_prior_3,
+      coalesce(pm.month_count, 0) as prior_month_count
     from current_month cm
     left join prior_months pm on pm.slug = cm.slug
     where cm.total > 0
@@ -75,9 +85,10 @@ export async function detectAnomalies(db: DB): Promise<AnomalyResult[]> {
   for (const row of rows.rows) {
     const currentMtd = parseFloat(row.current_month)
     const avgMonthly = parseFloat(row.avg_prior_3)
+    const priorMonthCount = parseInt(row.prior_month_count)
 
-    // Skip if no historical data to compare against
-    if (avgMonthly <= 0) continue
+    // Skip if insufficient historical data (need MIN_HISTORICAL_MONTHS to avoid false positives)
+    if (avgMonthly <= 0 || priorMonthCount < MIN_HISTORICAL_MONTHS) continue
 
     // EOM estimate: extrapolate current MTD to full month
     const currentEom = currentMtd / monthProgress
@@ -104,11 +115,11 @@ export async function detectAnomalies(db: DB): Promise<AnomalyResult[]> {
 export async function persistAnomalyAlerts(db: DB, anomalies: AnomalyResult[], config: Record<string, string>): Promise<number> {
   if (anomalies.length === 0) return 0
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const recentAlerts = await db
     .select({ alertType: alerts.alertType })
     .from(alerts)
-    .where(and(gte(alerts.createdAt, since), eq(alerts.isActive, true)))
+    .where(gte(alerts.createdAt, since))
   const recentTypes = new Set(recentAlerts.map(a => a.alertType))
 
   let created = 0

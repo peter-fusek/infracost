@@ -66,6 +66,51 @@ const totalCount = computed(() => data.value?.total ?? 0)
 
 const pendingCount = computed(() => alerts.value.filter(a => a.status === 'pending').length)
 
+// Selection state
+const selectedIds = ref<Set<number>>(new Set())
+const bulkUpdating = ref(false)
+
+const allSelected = computed(() => {
+  const unresolvedIds = alerts.value.filter(a => a.status !== 'resolved').map(a => a.id)
+  return unresolvedIds.length > 0 && unresolvedIds.every(id => selectedIds.value.has(id))
+})
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedIds.value = new Set()
+  } else {
+    selectedIds.value = new Set(alerts.value.filter(a => a.status !== 'resolved').map(a => a.id))
+  }
+}
+
+function toggleSelect(id: number) {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+// Clear selection when filters change
+watch(queryParams, () => { selectedIds.value = new Set() })
+
+async function bulkUpdate(newStatus: 'acknowledged' | 'resolved') {
+  const ids = [...selectedIds.value]
+  if (!ids.length) return
+  bulkUpdating.value = true
+  try {
+    const result = await $fetch('/api/alerts/bulk', { method: 'PATCH', body: { ids, status: newStatus } })
+    selectedIds.value = new Set()
+    await refresh()
+    toast.add({ title: `${result.updated} alert${result.updated !== 1 ? 's' : ''} ${newStatus}`, color: 'success' })
+  }
+  catch {
+    toast.add({ title: 'Bulk update failed', color: 'error' })
+  }
+  finally {
+    bulkUpdating.value = false
+  }
+}
+
 async function updateAlert(id: number, newStatus: 'acknowledged' | 'resolved') {
   try {
     await $fetch(`/api/alerts/${id}`, { method: 'PATCH', body: { status: newStatus } })
@@ -75,12 +120,6 @@ async function updateAlert(id: number, newStatus: 'acknowledged' | 'resolved') {
   catch {
     toast.add({ title: 'Failed to update alert', color: 'error' })
   }
-}
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'error',
-  warning: 'warning',
-  info: 'info',
 }
 
 const SEVERITY_ICONS: Record<string, string> = {
@@ -154,6 +193,34 @@ function typeLabel(alertType: string): string {
       </span>
     </div>
 
+    <!-- Bulk action toolbar -->
+    <div v-if="loggedIn && selectedIds.size > 0" class="flex items-center gap-3 rounded-lg border border-[var(--ui-primary)] bg-[var(--ui-primary)]/5 px-4 py-2">
+      <span class="text-sm font-medium">{{ selectedIds.size }} selected</span>
+      <UButton
+        icon="i-lucide-eye"
+        label="Acknowledge"
+        size="xs"
+        variant="soft"
+        :loading="bulkUpdating"
+        @click="bulkUpdate('acknowledged')"
+      />
+      <UButton
+        icon="i-lucide-check-check"
+        label="Resolve All"
+        size="xs"
+        variant="solid"
+        :loading="bulkUpdating"
+        @click="bulkUpdate('resolved')"
+      />
+      <UButton
+        icon="i-lucide-x"
+        label="Clear"
+        size="xs"
+        variant="ghost"
+        @click="selectedIds = new Set()"
+      />
+    </div>
+
     <!-- Loading -->
     <SkeletonLoader v-if="status === 'pending'" variant="list" :rows="5" />
 
@@ -168,6 +235,17 @@ function typeLabel(alertType: string): string {
 
     <!-- Alert list -->
     <div v-else class="space-y-3">
+      <!-- Select all -->
+      <div v-if="loggedIn" class="flex items-center gap-2 px-1">
+        <input
+          type="checkbox"
+          :checked="allSelected"
+          class="size-4 rounded border-[var(--ui-border)] accent-emerald-500"
+          @change="toggleSelectAll"
+        >
+        <span class="text-xs text-[var(--ui-text-dimmed)]">Select all unresolved</span>
+      </div>
+
       <div
         v-for="alert in alerts"
         :key="alert.id"
@@ -176,9 +254,17 @@ function typeLabel(alertType: string): string {
           'border-[var(--ui-error)] bg-[var(--ui-error)]/5': alert.severity === 'critical' && alert.status !== 'resolved',
           'border-[var(--ui-warning)] bg-[var(--ui-warning)]/5': alert.severity === 'warning' && alert.status !== 'resolved',
           'border-[var(--ui-border)] bg-[var(--ui-bg)]': alert.severity === 'info' || alert.status === 'resolved',
+          'ring-2 ring-[var(--ui-primary)]': selectedIds.has(alert.id),
         }"
       >
         <div class="flex items-center gap-3 min-w-0">
+          <input
+            v-if="loggedIn && alert.status !== 'resolved'"
+            type="checkbox"
+            :checked="selectedIds.has(alert.id)"
+            class="size-4 shrink-0 rounded border-[var(--ui-border)] accent-emerald-500"
+            @change="toggleSelect(alert.id)"
+          >
           <UIcon
             :name="SEVERITY_ICONS[alert.severity] || 'i-lucide-info'"
             class="size-5 shrink-0"

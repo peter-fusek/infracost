@@ -17,6 +17,21 @@ export interface DriftItem {
   detail: string
 }
 
+/** Known-expected drifts that should not generate alerts. Format: "{Platform}_{name}" */
+const DRIFT_IGNORE_LIST = new Set([
+  // Suspended Render services (expected state)
+  'Render_oncoteam-dashboard', 'Render_oncoteam-dashboard-test', 'Render_oncoteam-landing',
+  'Render_homegrif_com', 'Render_homegrif_com-test', 'Render_partners-cz-test',
+  // Removed Render DBs (migrated or deleted — expected)
+  'Render_infracost-db', 'Render_budgetco-db', 'Render_scrabsnap-db',
+  'Render_partners-db-test', 'Render_partners-db-prod',
+  'Render_oncoteam-db-test', 'Render_oncoteam-db-prod',
+  'Render_homegrif-db-test', 'Render_homegrif-db',
+  // GitHub repos renamed/moved (expected 404s)
+  'GitHub_instarea', 'GitHub_replica.city', 'GitHub_grandpa_check',
+  'GitHub_pulseshape', 'GitHub_oncoteam', 'GitHub_homegrif.com',
+])
+
 const DRIFT_TYPE_LABELS: Record<DriftItem['type'], string> = {
   new: 'New',
   removed: 'Removed',
@@ -182,7 +197,8 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
     }
   }
 
-  return drifts
+  // Filter out known-expected drifts
+  return drifts.filter(d => !DRIFT_IGNORE_LIST.has(`${d.platform}_${d.name}`))
 }
 
 /**
@@ -194,12 +210,12 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
 export async function persistDriftAlerts(db: DB, drifts: DriftItem[], config: Record<string, string>): Promise<number> {
   if (drifts.length === 0) return 0
 
-  // Load recent drift alerts for dedup
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  // Load recent drift alerts for dedup (7-day window — prevents daily duplicates from cron)
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const recentAlerts = await db
     .select({ alertType: alerts.alertType })
     .from(alerts)
-    .where(and(gte(alerts.createdAt, since), eq(alerts.isActive, true)))
+    .where(gte(alerts.createdAt, since))
   const recentTypes = new Set(recentAlerts.map(a => a.alertType))
 
   // Build service→project lookup for linking events to projects

@@ -272,4 +272,21 @@ Some may be unused or redundant:
     effort: 'medium' as const,
     suggestedBy: 'ai' as const,
   },
+  {
+    title: 'Delete suspended Render databases by April 24',
+    description: `**Deadline:** April 24, 2026 (30-day review period ends)
+
+**Databases to delete:**
+- infracost-db (suspended — migrated to Railway 2026-03-25)
+- oncoteam-db-prod, oncoteam-db-test (suspended — migrated to Railway)
+- homegrif-db, homegrif-db-test (suspended)
+- partners-db-prod, partners-db-test (suspended)
+- scrabsnap-db, budgetco-db (suspended)
+
+**ACTION:** Delete all suspended DBs via Render dashboard. They are already migrated or unused. No cost savings (already $0) but cleans up inventory and drift alerts.`,
+    platformSlug: 'render',
+    estimatedSavings: '0.00',
+    effort: 'trivial' as const,
+    suggestedBy: 'ai' as const,
+  },
 ]
