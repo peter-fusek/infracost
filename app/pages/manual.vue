@@ -32,7 +32,7 @@ const state = reactive<FormState>({
   platformSlug: '',
   amount: undefined,
   costType: 'usage',
-  date: new Date().toISOString().split('T')[0],
+  date: new Date().toISOString().split('T')[0] ?? '',
   notes: '',
 })
 
@@ -92,7 +92,7 @@ function parseCsv(text: string): CsvRow[] {
   const lines = text.trim().split('\n')
   if (lines.length < 2) return []
 
-  const headers = splitCsvLine(lines[0]).map(h => h.toLowerCase())
+  const headers = splitCsvLine(lines[0]!).map(h => h.toLowerCase())
   const slugIdx = headers.findIndex(h => h === 'platform' || h === 'platformslug')
   const amountIdx = headers.findIndex(h => h === 'amount')
   const typeIdx = headers.findIndex(h => h === 'costtype' || h === 'type' || h === 'cost_type')
@@ -107,7 +107,7 @@ function parseCsv(text: string): CsvRow[] {
       platformSlug: cols[slugIdx] || '',
       amount: Number(cols[amountIdx]) || 0,
       costType: cols[typeIdx] || 'usage',
-      date: cols[dateIdx] || new Date().toISOString().split('T')[0],
+      date: cols[dateIdx] || new Date().toISOString().split('T')[0] || '',
       notes: cols[notesIdx] || '',
     }
   })

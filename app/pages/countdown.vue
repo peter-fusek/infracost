@@ -40,6 +40,7 @@ interface ExpiryItem {
   monthlyAfter: number | null
   daysUntil: number
   risk: 'expired' | 'critical' | 'warning' | 'ok'
+  category?: 'free_tier' | 'domain' | 'hosting' | 'ssl'
 }
 
 // Unified item types
@@ -259,7 +260,7 @@ function depletionProgressPct(p: DepletionPlatform) {
 
     <!-- Countdown items -->
     <div v-else class="space-y-4">
-      <template v-for="item in items" :key="`${item.type}-${item.data.slug}`">
+      <template v-for="item in items" :key="`${item.type}-${'slug' in item.data ? item.data.slug : item.data.platform}`">
 
         <!-- Credit Depletion Card -->
         <UCard v-if="item.type === 'depletion'" class="metric-card-budget">
@@ -342,7 +343,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                     <UBadge :color="(riskColor(item.data.risk) as any)" variant="subtle" size="xs">
                       {{ item.data.risk === 'ok' ? 'Healthy' : item.data.risk }}
                     </UBadge>
-                    <UBadge variant="outline" size="xs" color="neutral">{{ { domain: 'domain renewal', hosting: 'hosting renewal', ssl: 'SSL renewal', free_tier: 'free tier expiry' }[item.data.category || 'free_tier'] }}</UBadge>
+                    <UBadge variant="outline" size="xs" color="neutral">{{ ({ domain: 'domain renewal', hosting: 'hosting renewal', ssl: 'SSL renewal', free_tier: 'free tier expiry' } as Record<string, string>)[item.data.category || 'free_tier'] }}</UBadge>
                     <UBadge variant="subtle" size="xs" color="neutral">{{ item.data.platform }}</UBadge>
                   </div>
                 </div>

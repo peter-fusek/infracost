@@ -64,8 +64,8 @@ watch(() => route.path, () => {
           <div class="flex items-center gap-3">
             <template v-if="loggedIn">
               <div class="hidden sm:flex items-center gap-2">
-                <UAvatar v-if="user?.picture" :src="user.picture" size="xs" />
-                <span class="text-sm text-[var(--ui-text-muted)]">{{ user?.name || user?.email }}</span>
+                <UAvatar v-if="(user as any)?.picture" :src="(user as any).picture" size="xs" />
+                <span class="text-sm text-[var(--ui-text-muted)]">{{ (user as any)?.name || (user as any)?.email }}</span>
               </div>
               <UButton label="Logout" variant="ghost" size="xs" @click="logout()" />
             </template>

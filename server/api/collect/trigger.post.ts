@@ -144,7 +144,7 @@ async function runCollection(event: Parameters<Parameters<typeof defineEventHand
         recordsCollected: result.records.length,
         errorMessage: result.errors.length > 0 ? result.errors.join('; ') : null,
         completedAt: new Date(),
-      }).where(eq(collectionRuns.id, run.id))
+      }).where(eq(collectionRuns.id, run!.id))
 
       results.push({ platform: platform.slug, records: result.records.length, errors: result.errors })
     }
@@ -153,7 +153,7 @@ async function runCollection(event: Parameters<Parameters<typeof defineEventHand
         status: 'failed',
         errorMessage: err instanceof Error ? err.message : String(err),
         completedAt: new Date(),
-      }).where(eq(collectionRuns.id, run.id))
+      }).where(eq(collectionRuns.id, run!.id))
       results.push({ platform: platform.slug, records: 0, errors: [String(err)] })
     }
   }

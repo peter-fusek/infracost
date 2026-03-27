@@ -63,7 +63,7 @@ export default defineEventHandler(async () => {
 
     const daysRemaining = dailyBurn > 0 ? Math.floor(estimatedCurrentBalance / dailyBurn) : null
     const depletionDate = daysRemaining !== null
-      ? new Date(now.getTime() + daysRemaining * 86400000).toISOString().split('T')[0]
+      ? new Date(now.getTime() + daysRemaining * 86400000).toISOString().split('T')[0] ?? null
       : null
 
     let riskLevel: DepletionPlatform['riskLevel'] = 'ok'

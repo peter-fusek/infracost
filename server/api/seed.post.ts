@@ -52,8 +52,8 @@ export default defineEventHandler(async () => {
         monthlyLimit: b.monthlyLimit,
       })
       results.budgets++
-    } else if (existing[0].monthlyLimit !== b.monthlyLimit) {
-      await db.update(budgets).set({ monthlyLimit: b.monthlyLimit }).where(eq(budgets.id, existing[0].id))
+    } else if (existing[0]!.monthlyLimit !== b.monthlyLimit) {
+      await db.update(budgets).set({ monthlyLimit: b.monthlyLimit }).where(eq(budgets.id, existing[0]!.id))
       results.budgets++
     }
   }

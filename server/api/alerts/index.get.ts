@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     .offset(offset)
 
   // Include total count for pagination UI
-  const [{ count }] = await db
+  const [{ count } = { count: 0 }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(alerts)
     .leftJoin(budgets, eq(alerts.budgetId, budgets.id))

@@ -70,8 +70,8 @@ const { downloadCsv } = useCsvExport()
 // Per-platform MoM change
 function platformMomChange(monthIdx: number, slug: string): number | null {
   if (!data.value || monthIdx === 0) return null
-  const curr = getPlatformAmount(data.value.months[monthIdx], slug)
-  const prev = getPlatformAmount(data.value.months[monthIdx - 1], slug)
+  const curr = getPlatformAmount(data.value.months[monthIdx]!, slug)
+  const prev = getPlatformAmount(data.value.months[monthIdx - 1]!, slug)
   if (prev === 0) return curr > 0 ? 100 : null
   return Math.round(((curr - prev) / prev) * 100)
 }

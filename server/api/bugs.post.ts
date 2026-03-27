@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     }
     const match = body.screenshotDataUrl.match(/^data:image\/[^;]+;base64,(.+)$/)
     if (match) {
-      screenshotUrl = await uploadScreenshot(match[1], token)
+      screenshotUrl = await uploadScreenshot(match[1]!, token)
     }
     else {
       console.error('Unexpected screenshotDataUrl format — skipping upload')

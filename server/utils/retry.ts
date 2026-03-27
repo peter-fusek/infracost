@@ -54,5 +54,5 @@ export async function fetchWithRetry(
       throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status })
     }
     return response
-  }, { ...options, label: options?.label ?? url.split('?')[0].split('/').slice(-2).join('/') })
+  }, { ...options, label: options?.label ?? url.split('?')[0]!.split('/').slice(-2).join('/') })
 }

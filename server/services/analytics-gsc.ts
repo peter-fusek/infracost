@@ -94,7 +94,7 @@ export async function fetchGSCPerformance(siteUrl: string, days: number = 30): P
     const dailyData = await dailyResponse.json() as GSCResponse
     for (const row of dailyData.rows || []) {
       daily.push({
-        date: row.keys[0],
+        date: row.keys?.[0] ?? '',
         clicks: row.clicks,
         impressions: row.impressions,
         ctr: Math.round(row.ctr * 10000) / 10000,
@@ -121,7 +121,7 @@ export async function fetchGSCPerformance(siteUrl: string, days: number = 30): P
     if (queriesRes.ok) {
       const data = await queriesRes.json() as GSCResponse
       topQueries = (data.rows || []).map(r => ({
-        query: r.keys[0],
+        query: r.keys?.[0] ?? '',
         clicks: r.clicks,
         impressions: r.impressions,
         ctr: Math.round(r.ctr * 10000) / 10000,
@@ -132,7 +132,7 @@ export async function fetchGSCPerformance(siteUrl: string, days: number = 30): P
     if (pagesRes.ok) {
       const data = await pagesRes.json() as GSCResponse
       topPages = (data.rows || []).map(r => ({
-        page: r.keys[0],
+        page: r.keys?.[0] ?? '',
         clicks: r.clicks,
         impressions: r.impressions,
         ctr: Math.round(r.ctr * 10000) / 10000,
@@ -218,13 +218,13 @@ function generateTips(totals: GSCResult['totals'], daily: DailySearchPerformance
   // Check for high-impression low-CTR queries (quick wins)
   const quickWins = queries.filter(q => q.impressions > 20 && q.ctr < 0.02 && q.position <= 20)
   if (quickWins.length > 0) {
-    tips.push(`Quick wins: ${quickWins.length} queries have good position but low CTR — optimize snippets for: "${quickWins[0].query}"${quickWins.length > 1 ? ` and ${quickWins.length - 1} more` : ''}.`)
+    tips.push(`Quick wins: ${quickWins.length} queries have good position but low CTR — optimize snippets for: "${quickWins[0]?.query}"${quickWins.length > 1 ? ` and ${quickWins.length - 1} more` : ''}.`)
   }
 
   // Check for position 11-20 queries (push to page 1)
   const almostPage1 = queries.filter(q => q.position > 10 && q.position <= 20 && q.impressions > 10)
   if (almostPage1.length > 0) {
-    tips.push(`Page 1 opportunities: ${almostPage1.length} queries rank on page 2 — strengthen content for: "${almostPage1[0].query}".`)
+    tips.push(`Page 1 opportunities: ${almostPage1.length} queries rank on page 2 — strengthen content for: "${almostPage1[0]?.query}".`)
   }
 
   // LLMEO tips

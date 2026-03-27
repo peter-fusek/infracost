@@ -89,8 +89,8 @@ export default defineEventHandler(async (event) => {
 
   const withChanges = results.map((m, i) => ({
     ...m,
-    momChange: i > 0 && results[i - 1].totalUsd > 0
-      ? Math.round(((m.totalUsd - results[i - 1].totalUsd) / results[i - 1].totalUsd) * 100)
+    momChange: i > 0 && results[i - 1]!.totalUsd > 0
+      ? Math.round(((m.totalUsd - results[i - 1]!.totalUsd) / results[i - 1]!.totalUsd) * 100)
       : null,
   }))
 

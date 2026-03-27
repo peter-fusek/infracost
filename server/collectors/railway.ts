@@ -95,8 +95,8 @@ export function createRailwayCollector(apiToken: string, platformId: number, ser
             }
             const rate = RAILWAY_PRICING[item.measurement as keyof typeof RAILWAY_PRICING] ?? 0
             const itemCost = item.estimatedValue * rate
-            projectCosts[item.projectId].cost += itemCost
-            projectCosts[item.projectId].details[item.measurement] = item.estimatedValue
+            projectCosts[item.projectId]!.cost += itemCost
+            projectCosts[item.projectId]!.details[item.measurement] = item.estimatedValue
           }
 
           // Create a record per project with estimated cost

@@ -133,7 +133,7 @@ export function createRenderCollector(
             notes = `${service.type}: ${plan} plan`
           }
           else {
-            cost = PLAN_MONTHLY_COST.starter
+            cost = PLAN_MONTHLY_COST.starter ?? 0
             notes = `${service.type}: unknown plan "${plan}" (est. Starter)`
             errors.push(`Render: unknown plan "${plan}" for ${service.name}`)
           }

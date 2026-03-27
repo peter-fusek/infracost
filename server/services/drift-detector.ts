@@ -57,11 +57,10 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
         const data = await response.json() as Array<{ service: { name: string; type: string; suspended?: string; serviceDetails?: { plan?: string } } }>
         const liveNames = new Set(data.map(d => d.service.name))
 
-        // Get DB services for Render
         const renderPlatform = await db.select().from(platforms).where(eq(platforms.slug, 'render')).limit(1)
         if (renderPlatform.length > 0) {
           const dbServices = await db.select().from(services).where(
-            and(eq(services.platformId, renderPlatform[0].id), eq(services.isActive, true), isNull(services.deletedAt)),
+            and(eq(services.platformId, renderPlatform[0]!.id), eq(services.isActive, true), isNull(services.deletedAt)),
           )
           const dbNames = new Set(dbServices.filter(s => s.serviceType !== 'subscription' && s.serviceType !== 'ci_cd').map(s => s.name))
 
@@ -124,7 +123,7 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
         const railwayPlatform = await db.select().from(platforms).where(eq(platforms.slug, 'railway')).limit(1)
         if (railwayPlatform.length > 0) {
           const dbServices = await db.select().from(services).where(
-            and(eq(services.platformId, railwayPlatform[0].id), eq(services.isActive, true), isNull(services.deletedAt)),
+            and(eq(services.platformId, railwayPlatform[0]!.id), eq(services.isActive, true), isNull(services.deletedAt)),
           )
           const dbNames = new Set(dbServices.map(s => s.name))
 

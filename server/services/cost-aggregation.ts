@@ -171,7 +171,7 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
     .from(budgets)
     .where(and(eq(budgets.isActive, true), isNull(budgets.platformId)))
     .limit(1)
-  const budgetLimit = budgetRows.length > 0 ? parseFloat(budgetRows[0].monthlyLimit) : 500
+  const budgetLimit = budgetRows.length > 0 ? parseFloat(budgetRows[0]!.monthlyLimit) : 500
 
   return {
     totalMTD: Math.round(totalMTD * 100) / 100,

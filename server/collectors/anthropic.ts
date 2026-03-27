@@ -118,7 +118,7 @@ export function createAnthropicCollector(apiKey: string, platformId: number, ser
                 const totalCacheRead = usageData.data.reduce((s, b) => s + (b.cache_read_input_tokens || 0), 0)
                 const totalCacheWrite = usageData.data.reduce((s, b) => s + (b.cache_creation_input_tokens || 0), 0)
 
-                const rawData = records[0].rawData as Record<string, unknown>
+                const rawData = records[0]!.rawData as Record<string, unknown>
                 rawData.tokens = {
                   input: totalInput,
                   output: totalOutput,

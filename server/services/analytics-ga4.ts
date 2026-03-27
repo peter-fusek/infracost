@@ -84,12 +84,12 @@ export async function fetchGA4Traffic(propertyId: string, days: number = 30): Pr
     const data = await response.json() as GA4Response
 
     for (const row of data.rows || []) {
-      const date = formatGA4Date(row.dimensionValues[0].value)
-      const sessions = parseInt(row.metricValues[0].value) || 0
-      const users = parseInt(row.metricValues[1].value) || 0
-      const pageviews = parseInt(row.metricValues[2].value) || 0
-      const avgDuration = parseFloat(row.metricValues[3].value) || 0
-      const bounce = parseFloat(row.metricValues[4].value) || 0
+      const date = formatGA4Date(row.dimensionValues?.[0]?.value ?? '')
+      const sessions = parseInt(row.metricValues?.[0]?.value ?? '0') || 0
+      const users = parseInt(row.metricValues?.[1]?.value ?? '0') || 0
+      const pageviews = parseInt(row.metricValues?.[2]?.value ?? '0') || 0
+      const avgDuration = parseFloat(row.metricValues?.[3]?.value ?? '0') || 0
+      const bounce = parseFloat(row.metricValues?.[4]?.value ?? '0') || 0
 
       daily.push({
         date,
@@ -132,8 +132,8 @@ export async function fetchGA4Traffic(propertyId: string, days: number = 30): Pr
         const botByDate = new Map<string, number>()
 
         for (const row of botData.rows || []) {
-          const date = formatGA4Date(row.dimensionValues[0].value)
-          const sessions = parseInt(row.metricValues[0].value) || 0
+          const date = formatGA4Date(row.dimensionValues?.[0]?.value ?? '')
+          const sessions = parseInt(row.metricValues?.[0]?.value ?? '0') || 0
           botByDate.set(date, (botByDate.get(date) || 0) + sessions)
         }
 

@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
   const balances = await getBalances()
   balances[platform] = {
     balance: numBalance,
-    updatedAt: new Date().toISOString().split('T')[0],
+    updatedAt: new Date().toISOString().split('T')[0]!,
   }
   await saveBalances(balances)
 
