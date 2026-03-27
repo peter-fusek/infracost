@@ -92,17 +92,16 @@ export const serviceSeed = [
   { platformSlug: 'websupport', name: 'contactrefiner.com', project: 'contacts-refiner', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'homegrif.cz', project: 'homegrif.com', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'homegrif.com', project: 'homegrif.com', serviceType: 'domain', monthlyCostEstimate: '0.58' },
-  { platformSlug: 'websupport', name: 'shiftrotation.com', project: 'shiftrotation', serviceType: 'domain', monthlyCostEstimate: '0.58' },
+  // shiftrotation.com removed — orphaned domain, no active project
   { platformSlug: 'websupport', name: 'repli.city', project: 'replica.city', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'replica.city', project: 'replica.city', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'goreplicity.com', project: 'replica.city', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'goreplicacity.com', project: 'replica.city', serviceType: 'domain', monthlyCostEstimate: '0.58' },
-  { platformSlug: 'websupport', name: 'getwhysurvey.com', project: 'seekwhy', serviceType: 'domain', monthlyCostEstimate: '0.58' },
-  { platformSlug: 'websupport', name: 'getsurveylink.com', project: 'seekwhy', serviceType: 'domain', monthlyCostEstimate: '0.58' },
+  // seekwhy domains (getwhysurvey.com, getsurveylink.com) removed — orphaned, no active project
   { platformSlug: 'websupport', name: 'grandpacheck.com', project: 'grandpa_check', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'pulseshape.com', project: 'pulseshape', serviceType: 'domain', monthlyCostEstimate: '0.58' },
   { platformSlug: 'websupport', name: 'instarea.com', project: 'instarea', serviceType: 'domain', monthlyCostEstimate: '0.58' },
-  { platformSlug: 'websupport', name: 'instarea.sk', project: 'instarea', serviceType: 'domain', monthlyCostEstimate: '0.58' },
+  { platformSlug: 'websupport', name: 'instarea.sk', project: 'instarea.sk', serviceType: 'domain', monthlyCostEstimate: '0.58' }, // moved from instarea to instarea.sk project
 
   // Google Services (free tier — $0, tracked for complete infra picture)
   { platformSlug: 'google-services', name: 'Google Analytics 4', project: 'infracost', serviceType: 'analytics', monthlyCostEstimate: '0.00' },
@@ -127,11 +126,11 @@ export const budgetSeed = [
 export const projectSeed = [
   { slug: 'infracost', name: 'InfraCost', description: 'Infrastructure cost tracking dashboard', repoUrl: 'https://github.com/peter-fusek/infracost', productionUrl: 'https://infracost.eu', techStack: ['nuxt', 'typescript', 'tailwind', 'drizzle', 'postgres', 'render'], status: 'active' as const },
   { slug: 'homegrif.com', name: 'HomeGrif.com', description: 'Real estate partner platform (CZ + SK)', repoUrl: 'https://github.com/instarea-sk/homegrif_com', productionUrl: 'https://homegrif.com', techStack: ['nuxt', 'typescript', 'tailwind', 'postgres', 'render'], status: 'active' as const },
-  { slug: 'oncoteam', name: 'Oncoteam', description: 'Oncology treatment management dashboard', repoUrl: 'https://github.com/instarea-sk/oncoteam', productionUrl: 'https://dashboard.oncoteam.cloud', techStack: ['nuxt', 'typescript', 'fastapi', 'python', 'postgres', 'railway'], status: 'active' as const },
+  { slug: 'oncoteam', name: 'Oncoteam', description: 'Oncology treatment management dashboard', repoUrl: 'https://github.com/peter-fusek/oncoteam', productionUrl: 'https://dashboard.oncoteam.cloud', techStack: ['nuxt', 'typescript', 'fastapi', 'python', 'postgres', 'railway'], status: 'active' as const },
   { slug: 'oncofiles', name: 'Oncofiles', description: 'Medical document management with AI', repoUrl: 'https://github.com/peter-fusek/oncofiles', productionUrl: 'https://oncofiles.com', techStack: ['nuxt', 'typescript', 'turso', 'railway'], status: 'active' as const },
-  { slug: 'scrabsnap', name: 'ScrabSnap', description: 'Scrabble board scanner and scorer', repoUrl: null, productionUrl: null, techStack: ['nuxt', 'typescript', 'neon', 'render'], status: 'active' as const },
-  { slug: 'budgetco', name: 'BudgetCo', description: 'Family budget management with bank sync', repoUrl: null, productionUrl: 'https://budgetco.onrender.com', techStack: ['nuxt', 'fastapi', 'python', 'postgres', 'render', 'gcp'], status: 'active' as const },
-  { slug: 'contacts-refiner', name: 'Contacts Refiner', description: 'Google Contacts deduplication and enrichment', repoUrl: 'https://github.com/instarea-sk/google-contacts-refiner', productionUrl: 'https://contactrefiner.com', techStack: ['nuxt', 'typescript', 'gcp', 'render'], status: 'active' as const },
+  { slug: 'scrabsnap', name: 'ScrabSnap', description: 'Scrabble board scanner and scorer', repoUrl: 'https://github.com/peter-fusek/scrabsnap', productionUrl: 'https://scrabsnap.com', techStack: ['nuxt', 'typescript', 'neon', 'render'], status: 'active' as const },
+  { slug: 'budgetco', name: 'BudgetCo', description: 'Family budget management with bank sync', repoUrl: 'https://github.com/peter-fusek/budgetco', productionUrl: 'https://budgetco.eu', techStack: ['nuxt', 'fastapi', 'python', 'postgres', 'render', 'gcp'], status: 'active' as const },
+  { slug: 'contacts-refiner', name: 'Contacts Refiner', description: 'Google Contacts deduplication and enrichment', repoUrl: 'https://github.com/peter-fusek/google-contacts-refiner', productionUrl: 'https://contactrefiner.com', techStack: ['nuxt', 'typescript', 'gcp', 'render'], status: 'active' as const },
   { slug: 'pulseshape', name: 'PulseShape', description: 'Health data visualization', repoUrl: 'https://github.com/instarea-sk/pulseshape', productionUrl: 'https://pulseshape.com', techStack: ['vue', 'python', 'gcp'], status: 'active' as const },
   { slug: 'grandpa_check', name: 'Grandpa Check', description: 'Elderly wellness check-in system', repoUrl: 'https://github.com/instarea-sk/grandpa_check', productionUrl: null, techStack: ['python', 'github-actions'], status: 'active' as const },
   { slug: 'replica.city', name: 'Replica City', description: '3D city replica visualization', repoUrl: 'https://github.com/instarea-sk/replica-city', productionUrl: null, techStack: ['javascript', 'three.js'], status: 'paused' as const },
