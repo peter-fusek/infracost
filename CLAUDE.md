@@ -64,7 +64,9 @@
 - Breakdown: sort groups (name/cost/variance), filter by project, search services, sortable column headers
 - Platforms: expandable with Services + Collection Runs tabs (lazy-loaded)
 - Trends: per-platform MoM % change in detail table
-- Test suite: `pnpm test` — vitest, tests in tests/ directory (57 tests)
+- Test suite: `pnpm test` — vitest, tests in tests/ directory (183 tests, 15 files)
+- Expiry tracking: server/utils/free-tier-expiry.ts — free tier + domain/hosting/SSL renewal countdown (category field)
+- Drift ignore list: 23 entries in drift-detector.ts — Render suspended/deleted + GitHub renamed repos
 
 ## Deploy
 - Render Starter tier ($7/mo), auto-deploy on push to main
