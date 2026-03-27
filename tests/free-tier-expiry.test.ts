@@ -15,10 +15,10 @@ describe('FREE_TIER_EXPIRY', () => {
 
 describe('computeExpiryStatuses', () => {
   it('marks past dates as expired', () => {
-    const now = new Date('2026-07-01')
+    const now = new Date('2028-01-01')
     const statuses = computeExpiryStatuses(now)
 
-    // All current entries should be expired by July 2026
+    // All current entries should be expired by 2028
     for (const s of statuses) {
       expect(s.daysUntil).toBeLessThanOrEqual(0)
       expect(s.risk).toBe('expired')

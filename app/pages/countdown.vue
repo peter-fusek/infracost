@@ -342,7 +342,7 @@ function depletionProgressPct(p: DepletionPlatform) {
                     <UBadge :color="(riskColor(item.data.risk) as any)" variant="subtle" size="xs">
                       {{ item.data.risk === 'ok' ? 'Healthy' : item.data.risk }}
                     </UBadge>
-                    <UBadge variant="outline" size="xs" color="neutral">free tier expiry</UBadge>
+                    <UBadge variant="outline" size="xs" color="neutral">{{ { domain: 'domain renewal', hosting: 'hosting renewal', ssl: 'SSL renewal', free_tier: 'free tier expiry' }[item.data.category || 'free_tier'] }}</UBadge>
                     <UBadge variant="subtle" size="xs" color="neutral">{{ item.data.platform }}</UBadge>
                   </div>
                 </div>

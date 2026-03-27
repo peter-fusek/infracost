@@ -1,12 +1,11 @@
 /**
- * Free tier expiry tracking.
- * Tracks known expiration dates for free-tier services
- * and upcoming pricing changes.
+ * Expiry tracking for free tiers, domains, hosting, and SSL.
+ * Tracks known expiration dates so the countdown page warns before renewal.
  *
  * Expiry sources:
  * - Render: free plan DBs expire after 90 days
+ * - Websupport: domain registrations, hosting, SSL certificates
  * - Platform promotional credits with end dates
- * - Trial periods
  */
 
 export interface ExpiryItem {
@@ -16,6 +15,7 @@ export interface ExpiryItem {
   description: string
   impact: string // what happens when it expires
   monthlyAfter: number | null // estimated monthly cost after expiry (USD)
+  category?: 'free_tier' | 'domain' | 'hosting' | 'ssl' // for badge display
 }
 
 // Known free tier expirations — update as services are created/renewed
@@ -45,6 +45,33 @@ export const FREE_TIER_EXPIRY: ExpiryItem[] = [
     impact: 'Already suspended. Can be deleted to clean up inventory.',
     monthlyAfter: null,
   },
+
+  // Websupport — SSL certificate
+  { platform: 'Websupport', service: 'SSL: www.instarea.com', expiresAt: '2026-05-28', description: 'Standard SSL certificate for instarea.com WordPress site', impact: 'Site will show security warning. Renew before expiry.', monthlyAfter: null, category: 'ssl' },
+
+  // Websupport — Hosting
+  { platform: 'Websupport', service: 'Hosting Super (instarea)', expiresAt: '2026-07-07', description: 'WordPress hosting for instarea.com', impact: 'instarea.com goes offline. Will be decommissioned when instarea.sk replaces it.', monthlyAfter: 5.00, category: 'hosting' },
+
+  // Websupport — Domains (sorted by expiry date)
+  { platform: 'Websupport', service: 'instarea.com', expiresAt: '2026-06-13', description: 'Company domain (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'replica.city', expiresAt: '2026-06-27', description: 'Domain for paused Replica City project (.city)', impact: 'Domain expires. Project is paused — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'repli.city', expiresAt: '2026-06-27', description: 'Alternate domain for paused Replica City (.city)', impact: 'Domain expires. Project is paused — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'goreplicity.com', expiresAt: '2026-06-27', description: 'Alternate domain for paused Replica City (.com)', impact: 'Domain expires. Project is paused — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'goreplicacity.com', expiresAt: '2026-06-27', description: 'Alternate domain for paused Replica City (.com)', impact: 'Domain expires. Project is paused — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'grandpacheck.com', expiresAt: '2026-09-26', description: 'Domain for Grandpa Check project (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'getwhysurvey.com', expiresAt: '2026-09-26', description: 'Orphaned domain — no active project (.com)', impact: 'Domain expires. No project uses it — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'getsurveylink.com', expiresAt: '2026-09-26', description: 'Orphaned domain — no active project (.com)', impact: 'Domain expires. No project uses it — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'instarea.sk', expiresAt: '2026-09-26', description: 'Company domain for new Nuxt site (.sk)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'shiftrotation.com', expiresAt: '2026-11-26', description: 'Orphaned domain — no active project (.com)', impact: 'Domain expires. No project uses it — decide if still needed.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'homegrif.com', expiresAt: '2026-12-05', description: 'Primary domain for HomeGrif.com (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'homegrif.cz', expiresAt: '2027-02-25', description: 'Czech domain for HomeGrif (.cz)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'contactrefiner.com', expiresAt: '2027-03-10', description: 'Domain for Contacts Refiner (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'oncoteam.cloud', expiresAt: '2027-03-11', description: 'Domain for Oncoteam (.cloud)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'oncofiles.com', expiresAt: '2027-03-11', description: 'Domain for Oncofiles (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'pulseshape.com', expiresAt: '2027-03-13', description: 'Domain for PulseShape (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'infracost.eu', expiresAt: '2027-03-18', description: 'Domain for InfraCost (.eu)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'budgetco.eu', expiresAt: '2027-03-18', description: 'Domain for BudgetCo (.eu)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'scrabsnap.com', expiresAt: '2027-03-27', description: 'Domain for ScrabSnap (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
 ]
 
 export interface ExpiryStatus extends ExpiryItem {
