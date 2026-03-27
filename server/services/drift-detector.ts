@@ -27,9 +27,12 @@ const DRIFT_IGNORE_LIST = new Set([
   'Render_partners-db-test', 'Render_partners-db-prod',
   'Render_oncoteam-db-test', 'Render_oncoteam-db-prod',
   'Render_homegrif-db-test', 'Render_homegrif-db',
+  // Removed Render services (migrated to Railway)
+  'Render_instareaweb',
   // GitHub repos renamed/moved (expected 404s)
   'GitHub_instarea', 'GitHub_replica.city', 'GitHub_grandpa_check',
   'GitHub_pulseshape', 'GitHub_oncoteam', 'GitHub_homegrif.com',
+  'GitHub_instarea.sk',
 ])
 
 const DRIFT_TYPE_LABELS: Record<DriftItem['type'], string> = {

@@ -86,8 +86,8 @@ interface DriftResponse {
 
 const { data, status, refresh } = await useFetch<StatusResponse>('/api/status')
 const { data: projectsData } = await useFetch<{ projects: Project[] }>('/api/projects')
-const { data: driftData } = await useFetch<DriftResponse>('/api/drift')
-const { data: repoStats } = await useFetch<{
+const { data: driftData } = useLazyFetch<DriftResponse>('/api/drift')
+const { data: repoStats } = useLazyFetch<{
   stars: number; forks: number; watchers: number; openIssues: number
   branchCount: number; sizeKb: number; language: string | null; pushedAt: string | null
   clones14d: number; clonesUnique14d: number; views14d: number; viewsUnique14d: number

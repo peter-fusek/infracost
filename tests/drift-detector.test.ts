@@ -12,13 +12,15 @@ describe('DRIFT_IGNORE_LIST', () => {
     'Render_partners-db-test', 'Render_partners-db-prod',
     'Render_oncoteam-db-test', 'Render_oncoteam-db-prod',
     'Render_homegrif-db-test', 'Render_homegrif-db',
+    'Render_instareaweb',
     'GitHub_instarea', 'GitHub_replica.city', 'GitHub_grandpa_check',
     'GitHub_pulseshape', 'GitHub_oncoteam', 'GitHub_homegrif.com',
+    'GitHub_instarea.sk',
   ])
 
-  it('contains 28 expected entries', () => {
-    // 15 Render + 6 GitHub = 21 entries currently
-    expect(DRIFT_IGNORE_LIST.size).toBe(21)
+  it('contains expected entries', () => {
+    // 16 Render + 7 GitHub = 23 entries
+    expect(DRIFT_IGNORE_LIST.size).toBe(23)
   })
 
   it('filters suspended Render web services', () => {

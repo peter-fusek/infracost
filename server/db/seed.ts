@@ -31,7 +31,7 @@ export const serviceSeed = [
   { platformSlug: 'render', name: 'scrabsnap', project: 'scrabsnap', serviceType: 'web', monthlyCostEstimate: '2.57' },
   { platformSlug: 'render', name: 'budgetco', project: 'budgetco', serviceType: 'web', monthlyCostEstimate: '2.14' },
   { platformSlug: 'render', name: 'contacts-refiner-dashboard', project: 'contacts-refiner', serviceType: 'web', monthlyCostEstimate: '2.23' },
-  { platformSlug: 'render', name: 'instareaweb', project: 'instarea', serviceType: 'web', monthlyCostEstimate: '0.00' },
+  { platformSlug: 'render', name: 'instareaweb', project: 'instarea', serviceType: 'web', monthlyCostEstimate: '0.00' }, // DELETED — migrated to Railway (loyal-creativity)
   { platformSlug: 'render', name: 'oncoteam-dashboard', project: 'oncoteam', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED — migrated to Railway
   { platformSlug: 'render', name: 'oncoteam-dashboard-test', project: 'oncoteam', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED
   { platformSlug: 'render', name: 'oncoteam-landing', project: 'oncoteam', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED — migrated to Railway
