@@ -34,7 +34,7 @@
       "vue-demi"
     ],
     "overrides": {
-      "serialize-javascript": ">=7.0.3",
+      "serialize-javascript": ">=7.0.5",
       "esbuild": ">=0.25.0",
       "h3": ">=1.15.9",
       "yaml": ">=2.8.3",
