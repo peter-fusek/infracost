@@ -2,37 +2,41 @@
 
 > Infrastructure cost tracking dashboard for cloud and AI platforms
 
-InfraCost is a self-hosted web application that tracks and optimizes infrastructure spending across multiple cloud platforms. It provides automated cost collection, budget alerts, depletion forecasts, drift detection, and plan limit tracking — all in a single dashboard.
+InfraCost is a self-hosted web application that tracks and optimizes infrastructure spending across 12 cloud and AI platforms. It provides automated cost collection, budget alerts, anomaly detection, drift detection, domain/SSL expiry tracking, and project analytics — all in a single dashboard.
 
 ## Key Features
 
-- **Multi-Platform Tracking**: Automated API collectors for 9 platforms: Render, Railway, Anthropic, Neon, Turso, Resend, UptimeRobot, GCP, Websupport
-- **Budget Alerts**: Threshold-based alerts (50%, 75%, 90%, 100%) via email (Resend) and WhatsApp (CallMeBot)
-- **Depletion Forecasts**: Daily burn rate and runway projections for prepaid API credits
-- **Drift Detection**: Compares live API service inventories against tracked records daily
-- **Plan Limits**: Free tier usage tracking with progress bars and risk indicators
-- **Live API Status**: Parallel health checks for all 9 platform APIs with 5-minute caching
-- **Project Grouping**: Cost breakdown toggleable between "By Platform" and "By Project" views
-- **Collection Freshness**: Per-platform timestamps showing data age with green/yellow/red indicators
+- **12-Platform Tracking**: API collectors for Render, Railway, Anthropic, Claude Max, Neon, Turso, Resend, UptimeRobot, GCP, GitHub, Google Services, Websupport
+- **Budget & Anomaly Alerts**: Threshold alerts (50-100%) + anomaly detection for spending spikes. Email and WhatsApp notifications.
+- **Countdown Dashboard**: Credits, plan limits, domain renewals, SSL expirations, and free tier deadlines — urgency-sorted with risk badges
+- **Drift Detection**: Compares live API service inventories against tracked records daily. Auto-discovers untracked GitHub repos.
+- **Project Analytics**: GA4 traffic + Google Search Console performance per project with SEO scoring
+- **Expiry Tracking**: 21 domain/hosting/SSL renewals tracked with countdown timers
+- **Weekly Digest**: Automated Monday email with MTD spend, budget %, active alerts, manual reminders
+- **Autonomous Health Checks**: Weekly scheduled agent audits project registry against GitHub repos
 - **Dual Currency**: All amounts shown in both USD and EUR
 
 ## Tech Stack
 
 - Nuxt 4 (Vue 3) + Nuxt UI v4 + Tailwind CSS v4
-- Drizzle ORM + PostgreSQL (Render)
+- Drizzle ORM + PostgreSQL (Railway)
 - Google OAuth for authentication
 - Daily cron collection at 06:00 UTC
+- 183 tests across 15 files
 
 ## Pages
 
 - `/` — Landing page + authenticated dashboard overview
 - `/breakdown` — Per-service cost breakdown (by platform or by project)
 - `/trends` — Monthly cost trends with MoM comparison
-- `/platforms` — Platform cards with API status, freshness, account info
-- `/limits` — Free tier plan limit usage tracking
-- `/depletion` — Prepaid credit balance and depletion forecasts
 - `/optimizations` — Cost optimization suggestions
-- `/status` — UptimeRobot monitoring dashboard
+- `/countdown` — Credits + limits + domain/SSL expiry countdown
+- `/alerts` — Filterable alert history with bulk actions
+- `/analytics` — GA4 traffic + GSC search performance per project
+- `/status` — UptimeRobot monitors + project registry + drift detection
+- `/platforms` — Platform cards with API status, freshness, account info
+- `/budgets` — Budget management and threshold configuration
+- `/manual` — Manual cost entry for non-API platforms
 
 ## URL
 

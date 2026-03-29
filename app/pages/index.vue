@@ -149,7 +149,7 @@ const features = [
   {
     icon: 'i-lucide-battery-warning',
     title: 'Countdown Dashboard',
-    description: 'Credits, plan limits, and free tier expirations — all urgency-sorted in one view. Know when your Anthropic credits run dry or your free DB expires.',
+    description: 'Credits, plan limits, domain renewals, SSL expirations, and free tier deadlines — all urgency-sorted in one view with risk-colored badges.',
   },
   {
     icon: 'i-lucide-git-compare',
@@ -164,7 +164,7 @@ const features = [
   {
     icon: 'i-lucide-shield-check',
     title: 'Resilient & Secure',
-    description: 'Google OAuth with email allowlist. Collector retry with exponential backoff. Collection run history. 15s API timeouts. All data in USD and EUR.',
+    description: 'Google OAuth with email allowlist. 183 tests. Weekly autonomous health checks. Collector retry with exponential backoff. 15s API timeouts. All data in USD and EUR.',
   },
 ]
 
