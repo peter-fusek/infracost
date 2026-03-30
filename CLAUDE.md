@@ -5,7 +5,7 @@
 - `pnpm dev` — dev server on port 3000
 - `pnpm drizzle-kit generate --name <name>` — create migration
 - `pnpm drizzle-kit push` — apply schema to DB (runs in Render build command)
-- `pnpm nuxt typecheck` — type checking (has pre-existing errors in railway.ts, render.ts, drift-detector.ts)
+- `pnpm nuxt typecheck` — type checking (0 errors as of Sprint 28)
 
 ## Architecture
 - Nuxt 4 + @nuxt/ui v4 + Tailwind CSS v4 + Drizzle ORM + node-postgres
@@ -38,11 +38,11 @@
   - Project cards: clickable expand with change history, yellow ring for "recently changed" (7 days)
   - /depletion, /limits redirect 301 → /countdown
 - Manual cost reminders: GET /api/costs/manual-reminders — tracks last-recorded date per manual platform, overdue >35 days
-- Weekly digest: server/tasks/weekly-digest.ts — Mondays 07:00 UTC, emails MTD spend, budget %, active alerts, manual reminders
+- Weekly digest: server/tasks/weekly-digest.ts — Mondays 07:00 UTC, emails MTD spend, budget %, active alerts, manual reminders, cost variance alerts (>20% deviation)
 - Loading: SkeletonLoader component (5 variants: cards, table, countdown, chart, list) replaces spinners on all pages
 - Bulk alerts: PATCH /api/alerts/bulk — batch resolve/acknowledge up to 200 alerts, UI checkboxes + toolbar on /alerts
 - Drift detection: 7-day dedup window, DRIFT_IGNORE_LIST for known-expected drifts (28 entries), dedup checks all statuses
-- Anomaly detection: MIN_HISTORICAL_MONTHS = 2 guard, 7-day dedup, threshold tuning deferred to Sprint 28 (June 2026)
+- Anomaly detection: MIN_HISTORICAL_MONTHS = 2 guard, 7-day dedup, threshold tuning deferred (June 2026)
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
@@ -50,6 +50,7 @@
 - Notifications: server/utils/notifications.ts (sendAlertEmail, sendWhatsApp) — shared by budget + plan limit + drift alerts
 - Plan limits: server/utils/plan-limits.ts (PLAN_LIMITS, extractUsage, formatUsage, formatLimit)
 - EUR conversion: server/utils/currency.ts (EUR_USD_RATE, toEur) — update monthly
+- Manual platform config: server/utils/manual-platforms.ts (MANUAL_PLATFORM_CONFIG — single source of truth for expected amounts)
 - Bug issue markdown: server/utils/bug-report-markdown.ts (buildBugIssueBody, BugContext type)
 - Collection trigger: app/composables/useCollectionTrigger.ts — shared composable for all refresh buttons
 - CSV export: app/composables/useCsvExport.ts — client-side CSV generation + download
