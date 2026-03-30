@@ -1,7 +1,14 @@
-import { and, eq, isNull, desc, gte, lte } from 'drizzle-orm'
+import { and, eq, isNull, desc, gte, lte, sql } from 'drizzle-orm'
 import { alerts, costRecords, platforms } from '../db/schema'
 import { getMTDSummary } from './cost-aggregation'
 import { sendAlertEmail } from '../utils/notifications'
+
+/** Expected monthly amounts for manual platforms — must match manual-reminders.get.ts */
+const MANUAL_EXPECTED: Record<string, number> = {
+  'claude-max': 246,
+  'google-services': 62.50,
+  'websupport': 0.58,
+}
 
 /**
  * Compose and send a weekly cost digest email.
@@ -86,6 +93,33 @@ export async function sendWeeklyDigest(db: ReturnType<typeof useDB>, config: Rec
     for (const name of manualReminders) {
       lines.push(`  ⚠ ${name}`)
     }
+    lines.push('')
+  }
+
+  // Cost variance alerts — flag manual platforms where recorded amount deviates >20% from expected
+  const costVariances: string[] = []
+  for (const p of manualPlatforms) {
+    const expected = MANUAL_EXPECTED[p.slug]
+    if (!expected) continue
+    const monthRecords = await db
+      .select({ total: sql<number>`COALESCE(SUM(${costRecords.amount}), 0)` })
+      .from(costRecords)
+      .where(and(
+        eq(costRecords.platformId, p.id),
+        eq(costRecords.isActive, true),
+        isNull(costRecords.deletedAt),
+        gte(costRecords.periodStart, monthStart),
+        lte(costRecords.periodEnd, monthEnd),
+      ))
+    const actual = Number(monthRecords[0]?.total ?? 0)
+    if (actual > 0 && Math.abs(actual - expected) / expected > 0.2) {
+      const pct = Math.round(((actual - expected) / expected) * 100)
+      costVariances.push(`  ⚠ ${p.name}: $${actual.toFixed(2)} recorded vs $${expected.toFixed(2)} expected (${pct > 0 ? '+' : ''}${pct}%)`)
+    }
+  }
+  if (costVariances.length) {
+    lines.push('Cost Variance Alerts (>20% deviation):')
+    lines.push(...costVariances)
     lines.push('')
   }
 

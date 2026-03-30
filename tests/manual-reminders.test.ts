@@ -3,8 +3,8 @@ import { describe, it, expect } from 'vitest'
 // Test pure logic from manual-reminders.get.ts
 
 const MANUAL_PLATFORM_CONFIG: Record<string, { expectedAmount: number; costType: string; serviceName: string }> = {
-  'claude-max': { expectedAmount: 196, costType: 'subscription', serviceName: 'Max Subscription (personal)' },
-  'google-services': { expectedAmount: 12, costType: 'subscription', serviceName: 'Google Workspace' },
+  'claude-max': { expectedAmount: 246, costType: 'subscription', serviceName: 'Max Subscription + Extra Usage' },
+  'google-services': { expectedAmount: 62.50, costType: 'subscription', serviceName: 'Google Workspace Business Standard (5 seats)' },
   'websupport': { expectedAmount: 0.58, costType: 'subscription', serviceName: 'Domain (infracost.eu)' },
 }
 
@@ -37,9 +37,9 @@ describe('MANUAL_PLATFORM_CONFIG', () => {
 
   it('has expected config for claude-max', () => {
     const config = MANUAL_PLATFORM_CONFIG['claude-max']
-    expect(config.expectedAmount).toBe(196)
+    expect(config.expectedAmount).toBe(246)
     expect(config.costType).toBe('subscription')
-    expect(config.serviceName).toBe('Max Subscription (personal)')
+    expect(config.serviceName).toBe('Max Subscription + Extra Usage')
   })
 
   it('returns undefined for unknown platform', () => {
