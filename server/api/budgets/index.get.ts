@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import { budgets, platforms } from '../../db/schema'
+import { budgets, platforms, projects } from '../../db/schema'
 
 export default defineEventHandler(async () => {
   const db = useDB()
@@ -10,6 +10,9 @@ export default defineEventHandler(async () => {
       name: budgets.name,
       platformId: budgets.platformId,
       platformName: platforms.name,
+      projectId: budgets.projectId,
+      projectName: projects.name,
+      projectSlug: projects.slug,
       monthlyLimit: budgets.monthlyLimit,
       alertAt50: budgets.alertAt50,
       alertAt75: budgets.alertAt75,
@@ -20,6 +23,7 @@ export default defineEventHandler(async () => {
     })
     .from(budgets)
     .leftJoin(platforms, eq(budgets.platformId, platforms.id))
+    .leftJoin(projects, eq(budgets.projectId, projects.id))
     .where(and(eq(budgets.isActive, true), isNull(budgets.deletedAt)))
     .orderBy(budgets.createdAt)
 

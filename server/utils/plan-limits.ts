@@ -41,7 +41,7 @@ export const PLAN_LIMITS: Record<string, Record<string, PlanLimit>> = {
     pipeline_minutes: { limit: 500, unit: 'minutes', label: 'Build Minutes', period: 'month' },
   },
   railway: {
-    monthly_credit_usd: { limit: 5.00, unit: 'USD', label: 'Included Credit', period: 'month' },
+    monthly_credit_usd: { limit: 20.00, unit: 'USD', label: 'Included Credit', period: 'month' },
   },
 }
 

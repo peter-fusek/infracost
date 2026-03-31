@@ -1,5 +1,5 @@
 import { and, eq, gte, lte, isNull, sql } from 'drizzle-orm'
-import { costRecords, platforms, services } from '../../db/schema'
+import { costRecords, platforms, services, budgets, projects as projectsTable } from '../../db/schema'
 import { getCurrentMonthRange, getMonthProgress } from '../../collectors/base'
 import { EUR_USD_RATE, toEur } from '../../utils/currency'
 
@@ -35,6 +35,7 @@ interface GroupBreakdown {
   totalEomEur: number
   lastCollectedAt: string | null
   lastRunStatus: string | null
+  budgetLimit: number | null
   services: ServiceBreakdown[]
 }
 
@@ -96,6 +97,19 @@ export default defineEventHandler(async (event) => {
     order by platform_id, started_at desc
   `)
   const runMap = new Map(latestRuns.rows.map(r => [r.platform_id, r]))
+
+  // Load project budgets for project-group view
+  const projectBudgetMap = new Map<string, number>()
+  if (groupBy === 'project') {
+    const projectBudgets = await db
+      .select({ slug: projectsTable.slug, monthlyLimit: budgets.monthlyLimit })
+      .from(budgets)
+      .innerJoin(projectsTable, eq(budgets.projectId, projectsTable.id))
+      .where(and(eq(budgets.isActive, true), isNull(budgets.deletedAt)))
+    for (const pb of projectBudgets) {
+      if (pb.slug) projectBudgetMap.set(pb.slug, parseFloat(pb.monthlyLimit))
+    }
+  }
 
   // Build service-level actuals map
   const actualMap = new Map<string, { total: number; count: number; costType: string; method: string }>()
@@ -217,6 +231,7 @@ export default defineEventHandler(async (event) => {
         totalEomEur: 0,
         lastCollectedAt: run?.completed_at ?? null,
         lastRunStatus: run?.status ?? null,
+        budgetLimit: projectBudgetMap.get(groupKey) ?? null,
         services: [],
       })
     }

@@ -82,6 +82,8 @@ watch(() => route.path, () => {
             </template>
             <UButton v-else label="Login" icon="i-lucide-log-in" variant="soft" size="sm" to="/auth/google" external />
 
+            <UColorModeButton variant="ghost" size="xs" />
+
             <!-- Mobile menu toggle -->
             <UButton
               class="lg:hidden"

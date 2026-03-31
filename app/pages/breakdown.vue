@@ -31,6 +31,7 @@ interface GroupBreakdown {
   totalEomEur: number
   lastCollectedAt: string | null
   lastRunStatus: string | null
+  budgetLimit: number | null
   services: ServiceBreakdown[]
 }
 
@@ -376,6 +377,13 @@ function sortIndicator(key: ServiceSortKey): string {
                 <p class="text-[var(--ui-text-muted)]">EOM</p>
                 <p class="font-medium">${{ fmt(group.totalEomUsd) }}</p>
                 <p class="text-xs text-[var(--ui-text-dimmed)]">€{{ fmt(group.totalEomEur) }}</p>
+              </div>
+              <div v-if="group.budgetLimit" class="min-w-16">
+                <p class="text-[var(--ui-text-muted)]">Budget</p>
+                <p class="font-medium" :class="group.totalEomUsd > group.budgetLimit ? 'text-[var(--ui-error)]' : 'text-[var(--ui-success)]'">
+                  {{ Math.round((group.totalEomUsd / group.budgetLimit) * 100) }}%
+                </p>
+                <p class="text-xs text-[var(--ui-text-dimmed)]">${{ fmt(group.budgetLimit) }}</p>
               </div>
             </div>
           </div>

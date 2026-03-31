@@ -1,6 +1,6 @@
 import { and, eq, isNull, gte } from 'drizzle-orm'
-import { budgets, alerts } from '../db/schema'
-import { getMTDSummary } from './cost-aggregation'
+import { budgets, alerts, projects } from '../db/schema'
+import { getMTDSummary, getProjectEOM } from './cost-aggregation'
 import { sendAlertEmail, sendWhatsApp } from '../utils/notifications'
 
 const THRESHOLDS = [
@@ -14,18 +14,32 @@ export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/d
   const summary = await getMTDSummary(db)
   const newAlerts: Array<{ severity: string; message: string; budgetId: number }> = []
 
-  // Get active budgets
+  // Get active budgets with project info
   const budgetList = await db
-    .select()
+    .select({
+      id: budgets.id,
+      name: budgets.name,
+      platformId: budgets.platformId,
+      projectId: budgets.projectId,
+      monthlyLimit: budgets.monthlyLimit,
+      alertAt50: budgets.alertAt50,
+      alertAt75: budgets.alertAt75,
+      alertAt90: budgets.alertAt90,
+      alertAt100: budgets.alertAt100,
+      projectSlug: projects.slug,
+    })
     .from(budgets)
+    .leftJoin(projects, eq(budgets.projectId, projects.id))
     .where(and(eq(budgets.isActive, true), isNull(budgets.deletedAt)))
 
   for (const budget of budgetList) {
     const limit = parseFloat(budget.monthlyLimit)
     if (limit <= 0) continue
 
-    // Use EOM estimate for forward-looking alerts
-    const eom = summary.eomEstimate
+    // Use project-specific EOM if budget is project-scoped, otherwise global
+    const eom = budget.projectSlug
+      ? await getProjectEOM(db, budget.projectSlug)
+      : summary.eomEstimate
     const pct = Math.round((eom / limit) * 100)
 
     // Find highest threshold that's breached

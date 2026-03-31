@@ -2,10 +2,11 @@ import { budgets } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { name, monthlyLimit, platformId, alertAt50, alertAt75, alertAt90, alertAt100 } = body as {
+  const { name, monthlyLimit, platformId, projectId, alertAt50, alertAt75, alertAt90, alertAt100 } = body as {
     name: string
     monthlyLimit: number
     platformId?: number | null
+    projectId?: number | null
     alertAt50?: boolean
     alertAt75?: boolean
     alertAt90?: boolean
@@ -18,12 +19,16 @@ export default defineEventHandler(async (event) => {
   if (!monthlyLimit || typeof monthlyLimit !== 'number' || monthlyLimit <= 0) {
     throw createError({ statusCode: 400, message: 'monthlyLimit must be a positive number' })
   }
+  if (platformId && projectId) {
+    throw createError({ statusCode: 400, message: 'Budget cannot be scoped to both a platform and a project' })
+  }
 
   const db = useDB()
   const [created] = await db.insert(budgets).values({
     name: name.trim(),
     monthlyLimit: String(monthlyLimit),
     platformId: platformId || null,
+    projectId: projectId || null,
     alertAt50: alertAt50 ?? true,
     alertAt75: alertAt75 ?? true,
     alertAt90: alertAt90 ?? true,

@@ -4,7 +4,7 @@ import type { BaseCollector, CollectorResult, CostRecord } from './base'
  * Railway cost collector using GraphQL API.
  * Fetches project list and usage metrics, then estimates costs using Railway pricing.
  *
- * Railway pricing (Hobby plan):
+ * Railway pricing (Pro plan):
  * - CPU: $0.000463 / vCPU / minute
  * - Memory: $0.000231 / GB / minute
  * - Egress: $0.05 / GB

@@ -40,6 +40,20 @@ const { loggedIn } = useUserSession()
 const toast = useToast()
 const submitting = ref(false)
 
+// Expected vs Actual comparison
+interface Reminder {
+  slug: string
+  name: string
+  lastRecordedDate: string | null
+  daysSinceLastRecord: number | null
+  currentMonthRecorded: boolean
+  currentMonthAmount: number | null
+  expectedAmount: number | null
+  costType: string
+  serviceName: string
+}
+const { data: remindersData, refresh: refreshReminders } = await useFetch<{ reminders: Reminder[]; month: string }>('/api/costs/manual-reminders', { lazy: true })
+
 // CSV Import
 interface CsvRow {
   platformSlug: string
@@ -164,6 +178,7 @@ async function onSubmit(event: FormSubmitEvent<FormState>) {
     toast.add({ title: 'Cost recorded', description: `$${event.data.amount} added for ${event.data.platformSlug}`, color: 'success' })
     state.amount = undefined
     state.notes = ''
+    await refreshReminders()
   }
   catch (err: any) {
     toast.add({ title: 'Error', description: err.data?.message || 'Failed to save', color: 'error' })
@@ -226,6 +241,60 @@ async function onSubmit(event: FormSubmitEvent<FormState>) {
 
         <UButton type="submit" label="Save Cost Record" :loading="submitting" block />
       </UForm>
+    </UCard>
+
+    <!-- Expected vs Actual Comparison -->
+    <UCard v-if="remindersData?.reminders?.length">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-scale" class="size-5" />
+            <span class="font-display font-bold">Expected vs Actual</span>
+          </div>
+          <UBadge variant="subtle" size="xs" color="neutral">{{ remindersData.month }}</UBadge>
+        </div>
+      </template>
+
+      <div class="space-y-3">
+        <div
+          v-for="r in remindersData.reminders"
+          :key="r.slug"
+          class="flex items-center justify-between gap-4 rounded-lg border border-[var(--ui-border)] px-4 py-3"
+          :class="{
+            'border-l-3 border-l-emerald-500': r.currentMonthRecorded && r.expectedAmount && r.currentMonthAmount !== null && Math.abs(r.currentMonthAmount - r.expectedAmount) < r.expectedAmount * 0.1,
+            'border-l-3 border-l-amber-500': r.currentMonthRecorded && r.expectedAmount && r.currentMonthAmount !== null && Math.abs(r.currentMonthAmount - r.expectedAmount) >= r.expectedAmount * 0.1,
+            'border-l-3 border-l-red-500': !r.currentMonthRecorded,
+          }"
+        >
+          <div class="min-w-0">
+            <p class="font-medium">{{ r.name }}</p>
+            <p class="text-xs text-[var(--ui-text-dimmed)]">{{ r.serviceName }}</p>
+            <p v-if="r.lastRecordedDate" class="text-xs text-[var(--ui-text-dimmed)]">
+              Last recorded {{ timeAgo(r.lastRecordedDate) }}
+            </p>
+          </div>
+          <div class="flex items-center gap-4 text-right shrink-0">
+            <div>
+              <p class="text-xs text-[var(--ui-text-muted)]">Expected</p>
+              <p class="font-mono tabular-nums">${{ r.expectedAmount?.toFixed(2) ?? '—' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-[var(--ui-text-muted)]">Actual</p>
+              <p v-if="r.currentMonthRecorded" class="font-mono tabular-nums font-medium">${{ r.currentMonthAmount?.toFixed(2) }}</p>
+              <p v-else class="text-sm text-[var(--ui-text-dimmed)]">Not recorded</p>
+            </div>
+            <div v-if="r.currentMonthRecorded && r.expectedAmount && r.currentMonthAmount !== null" class="min-w-12">
+              <p class="text-xs text-[var(--ui-text-muted)]">Diff</p>
+              <p
+                class="font-mono tabular-nums text-sm font-medium"
+                :class="r.currentMonthAmount - r.expectedAmount > 0 ? 'text-[var(--ui-error)]' : r.currentMonthAmount - r.expectedAmount < 0 ? 'text-[var(--ui-success)]' : 'text-[var(--ui-text-muted)]'"
+              >
+                {{ r.currentMonthAmount - r.expectedAmount > 0 ? '+' : '' }}${{ (r.currentMonthAmount - r.expectedAmount).toFixed(2) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </UCard>
 
     <!-- CSV Import -->

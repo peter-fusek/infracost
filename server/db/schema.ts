@@ -98,6 +98,7 @@ export const budgets = pgTable('budgets', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 100 }).notNull(),
   platformId: integer('platform_id').references(() => platforms.id), // null = global budget
+  projectId: integer('project_id').references(() => projects.id), // null = not project-scoped
   monthlyLimit: numeric('monthly_limit', { precision: 10, scale: 2 }).notNull(),
   alertAt50: boolean('alert_at_50').notNull().default(true),
   alertAt75: boolean('alert_at_75').notNull().default(true),
@@ -213,4 +214,5 @@ export const projectsRelations = relations(projects, () => ({}))
 
 export const budgetsRelations = relations(budgets, ({ one }) => ({
   platform: one(platforms, { fields: [budgets.platformId], references: [platforms.id] }),
+  project: one(projects, { fields: [budgets.projectId], references: [projects.id] }),
 }))

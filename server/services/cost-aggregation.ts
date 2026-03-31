@@ -189,6 +189,39 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
   }
 }
 
+/** Get EOM estimate for a specific project (by slug, matching services.project) */
+export async function getProjectEOM(db: ReturnType<typeof import('../utils/db').useDB>, projectSlug: string): Promise<number> {
+  const { start, end } = getCurrentMonthRange()
+  const progress = getMonthProgress()
+
+  const rows = await db
+    .select({
+      amount: costRecords.amount,
+      costType: costRecords.costType,
+    })
+    .from(costRecords)
+    .innerJoin(services, eq(costRecords.serviceId, services.id))
+    .where(
+      and(
+        eq(services.project, projectSlug),
+        gte(costRecords.periodStart, start),
+        lte(costRecords.periodEnd, end),
+        eq(costRecords.isActive, true),
+        isNull(costRecords.deletedAt),
+      ),
+    )
+
+  let fixedTotal = 0
+  let usageTotal = 0
+  for (const r of rows) {
+    const amt = parseFloat(r.amount || '0')
+    if (r.costType === 'subscription' || r.costType === 'one_time') fixedTotal += amt
+    else usageTotal += amt
+  }
+
+  return Math.round((fixedTotal + (progress > 0 ? usageTotal / progress : 0)) * 100) / 100
+}
+
 /** Get cost history for a date range, optionally filtered by platform */
 export async function getCostHistory(
   db: ReturnType<typeof import('../utils/db').useDB>,

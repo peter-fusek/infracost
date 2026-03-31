@@ -4,6 +4,9 @@ interface Budget {
   name: string
   platformId: number | null
   platformName: string | null
+  projectId: number | null
+  projectName: string | null
+  projectSlug: string | null
   monthlyLimit: string
   alertAt50: boolean
   alertAt75: boolean
@@ -13,14 +16,23 @@ interface Budget {
   createdAt: string
 }
 
+interface Project {
+  id: number
+  name: string
+  slug: string
+}
+
 const { data, status, refresh } = await useFetch<{ budgets: Budget[] }>('/api/budgets')
+const { data: projectsData } = await useFetch<{ projects: Project[] }>('/api/projects', { lazy: true })
 const { loggedIn } = useUserSession()
 
 const showForm = ref(false)
 const saving = ref(false)
+const budgetScope = ref<'global' | 'project'>('global')
 const form = ref({
   name: '',
   monthlyLimit: 550,
+  projectId: null as number | null,
   alertAt50: true,
   alertAt75: true,
   alertAt90: true,
@@ -32,10 +44,14 @@ async function createBudget() {
   try {
     await $fetch('/api/budgets', {
       method: 'POST',
-      body: form.value,
+      body: {
+        ...form.value,
+        projectId: budgetScope.value === 'project' ? form.value.projectId : null,
+      },
     })
     showForm.value = false
-    form.value = { name: '', monthlyLimit: 550, alertAt50: true, alertAt75: true, alertAt90: true, alertAt100: true }
+    budgetScope.value = 'global'
+    form.value = { name: '', monthlyLimit: 550, projectId: null, alertAt50: true, alertAt75: true, alertAt90: true, alertAt100: true }
     await refresh()
   }
   finally {
@@ -109,6 +125,42 @@ function fmt(n: string | number) {
         </div>
 
         <div>
+          <label class="block text-sm font-medium mb-2">Budget Scope</label>
+          <div class="flex gap-3">
+            <UButton
+              size="xs"
+              :variant="budgetScope === 'global' ? 'solid' : 'outline'"
+              :color="budgetScope === 'global' ? 'primary' : 'neutral'"
+              label="Global"
+              icon="i-lucide-globe"
+              @click="budgetScope = 'global'; form.projectId = null"
+            />
+            <UButton
+              size="xs"
+              :variant="budgetScope === 'project' ? 'solid' : 'outline'"
+              :color="budgetScope === 'project' ? 'primary' : 'neutral'"
+              label="Per Project"
+              icon="i-lucide-folder"
+              @click="budgetScope = 'project'"
+            />
+          </div>
+        </div>
+
+        <div v-if="budgetScope === 'project'">
+          <label class="block text-sm font-medium mb-1">Project</label>
+          <select
+            v-model.number="form.projectId"
+            required
+            class="w-full rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option :value="null" disabled>Select a project...</option>
+            <option v-for="p in projectsData?.projects" :key="p.id" :value="p.id">
+              {{ p.name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium mb-2">Alert Thresholds</label>
           <div class="flex flex-wrap gap-4">
             <label class="flex items-center gap-2 text-sm">
@@ -156,7 +208,10 @@ function fmt(n: string | number) {
           <div>
             <div class="flex items-center gap-2">
               <h2 class="font-display font-bold text-lg">{{ budget.name }}</h2>
-              <UBadge v-if="budget.platformName" variant="subtle" size="xs" color="primary">
+              <UBadge v-if="budget.projectName" variant="subtle" size="xs" color="success">
+                {{ budget.projectName }}
+              </UBadge>
+              <UBadge v-else-if="budget.platformName" variant="subtle" size="xs" color="primary">
                 {{ budget.platformName }}
               </UBadge>
               <UBadge v-else variant="subtle" size="xs" color="neutral">
