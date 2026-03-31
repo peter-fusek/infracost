@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql, isNull, desc } from 'drizzle-orm'
+import { and, eq, gte, lte, isNull } from 'drizzle-orm'
 import { costRecords, platforms, services, budgets } from '../db/schema'
 import { getMonthProgress, getCurrentMonthRange } from '../collectors/base'
 import { EUR_USD_RATE, toEur } from '../utils/currency'
@@ -85,7 +85,7 @@ export async function getMTDSummary(db: ReturnType<typeof import('../utils/db').
   const isFixedCost = (costType: string) => costType === 'subscription' || costType === 'one_time'
 
   // Group by platform, then by service
-  const platformMap = new Map<number, PlatformCost & { fixedMtd: number; usageMtd: number }>()
+  const platformMap = new Map<number, PlatformCost>()
   const serviceMap = new Map<string, ServiceCost>() // key: platformId-serviceId
 
   for (const r of records) {

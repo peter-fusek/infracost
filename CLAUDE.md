@@ -5,7 +5,7 @@
 - `pnpm dev` — dev server on port 3000
 - `pnpm drizzle-kit generate --name <name>` — create migration
 - `pnpm drizzle-kit push` — apply schema to DB (runs in Render build command)
-- `pnpm nuxt typecheck` — type checking (0 errors as of Sprint 28)
+- `pnpm nuxt typecheck` — type checking (0 errors as of Sprint 30; `pnpm nuxt typecheck` has vue-tsc module resolution issue, use `npx vue-tsc --noEmit` instead)
 
 ## Architecture
 - Nuxt 4 + @nuxt/ui v4 + Tailwind CSS v4 + Drizzle ORM + node-postgres
@@ -44,6 +44,10 @@
 - Bulk alerts: PATCH /api/alerts/bulk — batch resolve/acknowledge up to 200 alerts, UI checkboxes + toolbar on /alerts
 - Drift detection: 7-day dedup window, DRIFT_IGNORE_LIST for known-expected drifts (28 entries), dedup checks all statuses
 - Anomaly detection: MIN_HISTORICAL_MONTHS = 2 guard, 7-day dedup, threshold tuning deferred (June 2026)
+- Dark mode: UColorModeButton in header, .dark CSS overrides in main.css for custom styles (hero, nav pills, feature cards)
+- Per-project budgets: budgets.projectId FK, getProjectEOM() in cost-aggregation.ts, project budget alerts in budget-alerts.ts
+- Expected vs actual: /manual page shows MANUAL_PLATFORM_CONFIG expected amounts vs recorded actuals with variance
+- Logo carousel: auto-scrolling platform logos with Simple Icons on landing page (CSS keyframe animation, edge-fade mask)
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
@@ -69,7 +73,7 @@
 - Breakdown: sort groups (name/cost/variance), filter by project, search services, sortable column headers
 - Platforms: expandable with Services + Collection Runs tabs (lazy-loaded)
 - Trends: per-platform MoM % change in detail table
-- Test suite: `pnpm test` — vitest, tests in tests/ directory (183 tests, 15 files)
+- Test suite: `pnpm test` — vitest, tests in tests/ directory (203 tests, 16 files)
 - Expiry tracking: server/utils/free-tier-expiry.ts — free tier + domain/hosting/SSL renewal countdown (category field)
 - Drift ignore list: 23 entries in drift-detector.ts — Render suspended/deleted + GitHub renamed repos
 
@@ -90,3 +94,5 @@
 - Breakdown: NULL-serviceId cost records shown as synthetic "Unallocated" service rows (not hidden)
 - Seed data: projects merged (partners+homegrif → homegrif.com), Claude Max split into personal+instarea accounts
 - Countdown page uses Record<string,string> lookup maps for risk→color/icon instead of if-chains
+- GA4 analytics-config.ts: 388351377 is BudgetCo *account* ID, 529309393 is the *property* ID — don't confuse them
+- Railway plan limits: $20/mo Pro (upgraded from Hobby $5/mo on 2026-03-31)
