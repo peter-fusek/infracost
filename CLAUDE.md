@@ -48,6 +48,14 @@
 - Per-project budgets: budgets.projectId FK, getProjectEOM() in cost-aggregation.ts, project budget alerts in budget-alerts.ts
 - Expected vs actual: /manual page shows MANUAL_PLATFORM_CONFIG expected amounts vs recorded actuals with variance
 - Logo carousel: auto-scrolling platform logos with Simple Icons on landing page (CSS keyframe animation, edge-fade mask)
+- Pipeline build minutes: server/collectors/render.ts estimates from deploy timestamps (no Render billing API)
+  - Stored as CostRecord with rawData.type = 'pipeline_minutes' (per-service breakdown, EOM projection, overage cost)
+  - Limits pipeline: parallel query in limits.get.ts + plan-limit-alerts.ts (Railway pattern) injects usage.pipeline_minutes
+  - API: GET /api/render/build-minutes (breakdown), POST /api/render/build-minutes (manual override, auth-gated)
+  - 500 min/month free, $5/1000 overage, alerts at 75/90/100%
+  - Platforms page: "Build Minutes" tab on Render card with progress bar + per-service table
+  - Weekly digest includes pipeline minutes section when data exists
+  - Manual override is ephemeral — reset on next collection run (daily 06:00 UTC)
 
 ## Conventions
 - All DB queries use Drizzle ORM. Raw SQL via db.execute<T>(sql`...`) for complex queries (DISTINCT ON, CTEs)
@@ -71,9 +79,9 @@
 - Error handling: always surface errors in errors[] array, never empty catch blocks
 - Collection dedup: delete old records before inserting new per platform+period
 - Breakdown: sort groups (name/cost/variance), filter by project, search services, sortable column headers
-- Platforms: expandable with Services + Collection Runs tabs (lazy-loaded)
+- Platforms: expandable with Services + Collection Runs + Build Minutes (Render only) tabs (lazy-loaded)
 - Trends: per-platform MoM % change in detail table
-- Test suite: `pnpm test` — vitest, tests in tests/ directory (203 tests, 16 files)
+- Test suite: `pnpm test` — vitest, tests in tests/ directory (204 tests, 16 files)
 - Expiry tracking: server/utils/free-tier-expiry.ts — free tier + domain/hosting/SSL renewal countdown (category field)
 - Drift ignore list: 23 entries in drift-detector.ts — Render suspended/deleted + GitHub renamed repos
 
@@ -96,3 +104,6 @@
 - Countdown page uses Record<string,string> lookup maps for risk→color/icon instead of if-chains
 - GA4 analytics-config.ts: 388351377 is BudgetCo *account* ID, 529309393 is the *property* ID — don't confuse them
 - Railway plan limits: $20/mo Pro (upgraded from Hobby $5/mo on 2026-03-31)
+- Pipeline minutes: estimated from deploy timestamps (~80-90% accurate), Render has no billing API for this
+- Pipeline minutes record excluded from DISTINCT ON query via `raw_data->>'type' != 'pipeline_minutes'` — uses dedicated parallel query instead
+- Pipeline minutes manual override is ephemeral — wiped on next collection run (delete-before-insert dedup)
