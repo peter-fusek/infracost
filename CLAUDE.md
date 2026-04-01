@@ -50,6 +50,7 @@
 - Logo carousel: auto-scrolling platform logos with Simple Icons on landing page (CSS keyframe animation, edge-fade mask)
 - Pipeline build minutes: server/collectors/render.ts estimates from deploy timestamps (no Render billing API)
   - Stored as CostRecord with rawData.type = 'pipeline_minutes' (per-service breakdown, EOM projection, overage cost)
+  - Shared utilities: server/utils/plan-limits.ts (PIPELINE_LIMIT, extractPipelineMinutes, riskFromPct), server/utils/pipeline-query.ts (fetchLatestPipelineRecord)
   - Limits pipeline: parallel query in limits.get.ts + plan-limit-alerts.ts (Railway pattern) injects usage.pipeline_minutes
   - API: GET /api/render/build-minutes (breakdown), POST /api/render/build-minutes (manual override, auth-gated)
   - 500 min/month free, $5/1000 overage, alerts at 75/90/100%
@@ -81,7 +82,7 @@
 - Breakdown: sort groups (name/cost/variance), filter by project, search services, sortable column headers
 - Platforms: expandable with Services + Collection Runs + Build Minutes (Render only) tabs (lazy-loaded)
 - Trends: per-platform MoM % change in detail table
-- Test suite: `pnpm test` — vitest, tests in tests/ directory (204 tests, 16 files)
+- Test suite: `pnpm test` — vitest, tests in tests/ directory (213 tests, 16 files)
 - Expiry tracking: server/utils/free-tier-expiry.ts — free tier + domain/hosting/SSL renewal countdown (category field)
 - Drift ignore list: 23 entries in drift-detector.ts — Render suspended/deleted + GitHub renamed repos
 
