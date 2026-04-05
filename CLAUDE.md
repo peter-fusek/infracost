@@ -99,6 +99,8 @@
 - collectionRuns insert AFTER key check to avoid orphaned "running" records
 - Depletion balances stored in .data/credit-balances.json (not DB) — distinguish ENOENT from corruption
 - Resend collector: reports $20/mo Pro subscription + paginated email counting capped at 10 pages
+- Turso collector: Developer Plan $5.99/mo, fetches invoices from Turso API (not free tier)
+- Service estimates: PATCH /api/services/:id supports monthlyCostEstimate field updates
 - Collection trigger: module-level rate limit (2min) and concurrent run guard — resets on deploy
 - Breakdown: NULL-serviceId cost records shown as synthetic "Unallocated" service rows (not hidden)
 - Seed data: projects merged (partners+homegrif → homegrif.com), Claude Max split into personal+instarea accounts
