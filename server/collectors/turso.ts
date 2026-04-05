@@ -91,7 +91,8 @@ export function createTursoCollector(apiKey: string, platformId: number): BaseCo
               return invDate.startsWith(periodMonth) && (inv.status === 'paid' || inv.status === 'issued')
             })
             if (matchingInvoice) {
-              invoiceAmount = matchingInvoice.amount_due
+              const parsed = parseFloat(matchingInvoice.amount_due)
+              invoiceAmount = Number.isFinite(parsed) && parsed >= 0 ? parsed.toFixed(2) : '0.00'
               invoiceNotes = `invoice ${matchingInvoice.invoice_number}, ${matchingInvoice.status}`
             }
           } else {

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { services } from '../../db/schema'
-import { parseId } from '../../utils/validation'
+import { parseAmount, parseId } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
@@ -20,11 +20,7 @@ export default defineEventHandler(async (event) => {
     updates.name = body.name.trim()
   }
   if (body.monthlyCostEstimate !== undefined) {
-    const val = parseFloat(String(body.monthlyCostEstimate))
-    if (isNaN(val) || val < 0) {
-      throw createError({ statusCode: 400, message: 'monthlyCostEstimate must be a non-negative number' })
-    }
-    updates.monthlyCostEstimate = val.toFixed(2)
+    updates.monthlyCostEstimate = parseAmount(body.monthlyCostEstimate).toFixed(2)
   }
 
   if (Object.keys(updates).length === 0) {

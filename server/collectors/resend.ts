@@ -5,6 +5,8 @@ import type { BaseCollector, CollectorResult, CostRecord } from './base'
  * Free tier: 3000 emails/mo, 100/day. No billing API — check usage via domains endpoint.
  * API docs: https://resend.com/docs/api-reference
  */
+const RESEND_PRO_MONTHLY = '20.00'
+
 export function createResendCollector(apiKey: string, platformId: number, serviceId?: number): BaseCollector {
   return {
     platformSlug: 'resend',
@@ -78,9 +80,7 @@ export function createResendCollector(apiKey: string, platformId: number, servic
           errors.push(`Resend: email count failed: ${err instanceof Error ? err.message : String(err)}`)
         }
 
-        // Resend Pro subscription: $20/mo fixed cost
         // Resend doesn't expose a billing API, so we report the known subscription amount
-        const RESEND_PRO_MONTHLY = '20.00'
         records.push({
           platformId,
           serviceId,
