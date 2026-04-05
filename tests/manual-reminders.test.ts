@@ -30,9 +30,9 @@ describe('MANUAL_PLATFORM_CONFIG', () => {
 
   it('has expected config for claude-max', () => {
     const config = MANUAL_PLATFORM_CONFIG['claude-max']
-    expect(config.expectedAmount).toBe(246)
+    expect(config.expectedAmount).toBe(467)
     expect(config.costType).toBe('subscription')
-    expect(config.serviceName).toBe('Max Subscription + Extra Usage')
+    expect(config.serviceName).toBe('Max Subscription (€180) + Extra Usage (~€250)')
   })
 
   it('returns undefined for unknown platform', () => {

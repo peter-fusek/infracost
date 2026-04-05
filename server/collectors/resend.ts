@@ -78,23 +78,26 @@ export function createResendCollector(apiKey: string, platformId: number, servic
           errors.push(`Resend: email count failed: ${err instanceof Error ? err.message : String(err)}`)
         }
 
-        // Resend doesn't expose billing — report as $0 (free tier)
+        // Resend Pro subscription: $20/mo fixed cost
+        // Resend doesn't expose a billing API, so we report the known subscription amount
+        const RESEND_PRO_MONTHLY = '20.00'
         records.push({
           platformId,
           serviceId,
           recordDate: new Date(),
           periodStart,
           periodEnd,
-          amount: '0.00',
+          amount: RESEND_PRO_MONTHLY,
           currency: 'USD',
-          costType: 'usage',
+          costType: 'subscription',
           collectionMethod: 'api',
           rawData: {
             domains: domains.data?.length ?? 0,
             emailsThisMonth,
             emailsToday,
+            plan: 'pro',
           },
-          notes: `Resend: ${domains.data?.length ?? 0} domain(s), ${emailsThisMonth} emails this month, free tier`,
+          notes: `Resend Pro: ${domains.data?.length ?? 0} domain(s), ${emailsThisMonth} emails this month`,
         })
       }
       catch (err) {

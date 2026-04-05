@@ -87,7 +87,7 @@
 - Drift ignore list: 23 entries in drift-detector.ts — Render suspended/deleted + GitHub renamed repos
 
 ## Deploy
-- Render Starter tier ($7/mo), auto-deploy on push to main
+- Render Professional tier (~$140/mo), auto-deploy on push to main
 - Build: `pnpm install && pnpm drizzle-kit push && pnpm build` (drizzle-kit push runs against Railway PostgreSQL via DATABASE_URL)
 - Domain: infracost.eu (Websupport DNS → Render)
 - Env vars: all API keys in Render dashboard, never in code
@@ -98,7 +98,7 @@
 - defineCachedEventHandler for Nitro caching (used on /api/platforms/status, 5min TTL)
 - collectionRuns insert AFTER key check to avoid orphaned "running" records
 - Depletion balances stored in .data/credit-balances.json (not DB) — distinguish ENOENT from corruption
-- Resend collector: paginated email counting capped at 10 pages to prevent API overdrawing
+- Resend collector: reports $20/mo Pro subscription + paginated email counting capped at 10 pages
 - Collection trigger: module-level rate limit (2min) and concurrent run guard — resets on deploy
 - Breakdown: NULL-serviceId cost records shown as synthetic "Unallocated" service rows (not hidden)
 - Seed data: projects merged (partners+homegrif → homegrif.com), Claude Max split into personal+instarea accounts

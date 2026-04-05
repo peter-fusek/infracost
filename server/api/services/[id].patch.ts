@@ -19,9 +19,16 @@ export default defineEventHandler(async (event) => {
   if (typeof body.name === 'string' && body.name.trim()) {
     updates.name = body.name.trim()
   }
+  if (body.monthlyCostEstimate !== undefined) {
+    const val = parseFloat(String(body.monthlyCostEstimate))
+    if (isNaN(val) || val < 0) {
+      throw createError({ statusCode: 400, message: 'monthlyCostEstimate must be a non-negative number' })
+    }
+    updates.monthlyCostEstimate = val.toFixed(2)
+  }
 
   if (Object.keys(updates).length === 0) {
-    throw createError({ statusCode: 400, message: 'No valid fields to update (project, name)' })
+    throw createError({ statusCode: 400, message: 'No valid fields to update (project, name, monthlyCostEstimate)' })
   }
 
   const db = useDB()

@@ -66,13 +66,47 @@ export function createTursoCollector(apiKey: string, platformId: number): BaseCo
         const rowsWritten = orgUsage?.rows_written ?? 0
         const storageBytes = orgUsage?.storage_bytes ?? 0
 
-        // Free tier — $0 cost but track usage metrics
+        // Fetch invoices to get actual billed amount for this period
+        let invoiceAmount = '0.00'
+        let invoiceNotes = 'free tier'
+        try {
+          const invoiceRes = await fetch(`https://api.turso.tech/v1/organizations/${orgSlug}/invoices`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(15_000),
+          })
+          if (invoiceRes.ok) {
+            const invoiceData = await invoiceRes.json() as {
+              invoices?: Array<{
+                invoice_number: string
+                amount_due: string
+                due_date: string
+                paid_at?: string
+                status: string
+              }>
+            }
+            // Find invoice for current period month
+            const periodMonth = periodStart.toISOString().slice(0, 7) // YYYY-MM
+            const matchingInvoice = invoiceData.invoices?.find((inv) => {
+              const invDate = inv.due_date || inv.paid_at || ''
+              return invDate.startsWith(periodMonth) && (inv.status === 'paid' || inv.status === 'issued')
+            })
+            if (matchingInvoice) {
+              invoiceAmount = matchingInvoice.amount_due
+              invoiceNotes = `invoice ${matchingInvoice.invoice_number}, ${matchingInvoice.status}`
+            }
+          } else {
+            errors.push(`Turso invoices API error ${invoiceRes.status}`)
+          }
+        } catch (err) {
+          errors.push(`Turso invoice fetch failed: ${err instanceof Error ? err.message : String(err)}`)
+        }
+
         records.push({
           platformId,
           recordDate: new Date(),
           periodStart,
           periodEnd,
-          amount: '0.00',
+          amount: invoiceAmount,
           currency: 'USD',
           costType: 'usage',
           collectionMethod: 'api',
@@ -84,7 +118,7 @@ export function createTursoCollector(apiKey: string, platformId: number): BaseCo
             storageBytes,
             usage: usageData,
           },
-          notes: `Turso: ${dbCount} database(s) in "${orgSlug}", free tier`,
+          notes: `Turso: ${dbCount} database(s) in "${orgSlug}", ${invoiceNotes}`,
         })
 
         return { records, errors, accountIdentifier: orgSlug }
