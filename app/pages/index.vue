@@ -234,10 +234,10 @@ const platforms = [
     <section>
       <h2 class="sr-only">Features</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div
+        <UCard
           v-for="(feature, i) in features"
           :key="feature.title"
-          class="feature-card animate-fade-in-up rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 dark:border-gray-500/50 dark:bg-gray-700/20"
+          class="feature-card animate-fade-in-up"
           :style="{ animationDelay: `${300 + i * 60}ms` }"
         >
           <div class="flex gap-4">
@@ -249,7 +249,7 @@ const platforms = [
               <p class="mt-1.5 text-sm leading-relaxed text-[var(--ui-text-muted)]">{{ feature.description }}</p>
             </div>
           </div>
-        </div>
+        </UCard>
       </div>
     </section>
 
