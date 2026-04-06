@@ -110,3 +110,5 @@
 - Pipeline minutes: estimated from deploy timestamps (~80-90% accurate), Render has no billing API for this
 - Pipeline minutes record excluded from DISTINCT ON query via `raw_data->>'type' != 'pipeline_minutes'` — uses dedicated parallel query instead
 - Pipeline minutes manual override is ephemeral — wiped on next collection run (delete-before-insert dedup)
+- EUR_USD_RATE sync points (6 total): server/utils/currency.ts, nuxt.config.ts (public.eurUsdRate), 3 page fallbacks (index/trends/breakdown `?? 0.87`), manual-platforms.ts comment
+- Dark mode: Nuxt UI v4 --ui-bg-elevated ≈ body bg in dark theme; UCard ring-default also too subtle. Use colored accent borders (border-l-3 border-l-emerald-500) for card visibility
