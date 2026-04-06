@@ -280,7 +280,7 @@ const platforms = [
           <p class="mt-1 text-sm text-[var(--ui-text-muted)]">
             {{ new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }}
             &middot; Day {{ mtd?.currentDay || 0 }} of {{ mtd?.daysInMonth || 31 }}
-            &middot; 1 USD = {{ mtd?.eurUsdRate ?? 0.92 }} EUR
+            &middot; 1 USD = {{ mtd?.eurUsdRate ?? 0.87 }} EUR
           </p>
         </div>
       </div>

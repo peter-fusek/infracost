@@ -78,7 +78,7 @@ export default defineNuxtConfig({
     alertFromEmail: process.env.ALERT_FROM_EMAIL || '',
     alertToEmail: process.env.ALERT_TO_EMAIL || '',
     public: {
-      eurUsdRate: 0.92, // EUR per 1 USD — update monthly
+      eurUsdRate: 0.87, // EUR per 1 USD — update monthly
     },
   },
 })

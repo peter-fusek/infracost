@@ -1,6 +1,6 @@
 /** Expected monthly amounts for manual platforms (single source of truth)
  * Updated 2026-04-05 from March EOM reconciliation (actual invoices)
- * Claude Max: €180 sub + ~€250 extra usage = €430 (~$467 at 0.92)
+ * Claude Max: €180 sub + ~€250 extra usage = €430 (~$494 at 0.87)
  * Google Services: invoice #5500832519 Mar 2026 — 5 seats Business Standard
  * Websupport: domain infracost.eu annual / 12
  */

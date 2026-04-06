@@ -97,7 +97,7 @@ function exportTrendsCsv() {
       <div>
         <h1 class="font-display text-2xl font-black tracking-tight">Cost Trends</h1>
         <p class="text-sm text-[var(--ui-text-muted)]">
-          Month-over-month spending &middot; 1 USD = {{ data?.eurUsdRate ?? 0.92 }} EUR
+          Month-over-month spending &middot; 1 USD = {{ data?.eurUsdRate ?? 0.87 }} EUR
         </p>
       </div>
       <UButton v-if="data" icon="i-lucide-download" label="CSV" size="sm" variant="outline" @click="exportTrendsCsv" />

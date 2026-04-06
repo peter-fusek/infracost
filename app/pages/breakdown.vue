@@ -230,7 +230,7 @@ function sortIndicator(key: ServiceSortKey): string {
       <div>
         <h1 class="font-display text-2xl font-black tracking-tight">Cost Breakdown</h1>
         <p class="text-sm text-[var(--ui-text-muted)]">
-          Per-service detail &middot; {{ data?.monthProgress ?? 0 }}% through month &middot; 1 USD = {{ data?.eurUsdRate ?? 0.92 }} EUR
+          Per-service detail &middot; {{ data?.monthProgress ?? 0 }}% through month &middot; 1 USD = {{ data?.eurUsdRate ?? 0.87 }} EUR
         </p>
         <p v-if="data?.lastUpdatedAt" class="text-xs text-[var(--ui-text-dimmed)]">
           Updated {{ timeAgo(data.lastUpdatedAt) }} &middot; Next update {{ new Date(data.nextUpdateAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
