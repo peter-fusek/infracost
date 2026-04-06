@@ -237,7 +237,7 @@ const platforms = [
         <UCard
           v-for="(feature, i) in features"
           :key="feature.title"
-          class="feature-card animate-fade-in-up"
+          class="feature-card animate-fade-in-up border-l-3 border-l-emerald-500/40"
           :style="{ animationDelay: `${300 + i * 60}ms` }"
         >
           <div class="flex gap-4">
