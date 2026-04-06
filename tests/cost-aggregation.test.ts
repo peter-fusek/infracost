@@ -14,15 +14,15 @@ function computeEomEstimate(fixedMtd: number, usageMtd: number, progress: number
 }
 
 describe('toEur', () => {
-  it('converts USD to EUR at 0.92 rate', () => {
-    expect(toEur(100)).toBe(92)
-    expect(toEur(10.50)).toBe(9.66)
+  it('converts USD to EUR at current rate', () => {
+    expect(toEur(100)).toBe(Math.round(100 * EUR_USD_RATE * 100) / 100)
+    expect(toEur(10.50)).toBe(Math.round(10.50 * EUR_USD_RATE * 100) / 100)
     expect(toEur(0)).toBe(0)
   })
 
   it('rounds to 2 decimal places', () => {
-    expect(toEur(1.111)).toBe(1.02) // 1.111 * 0.92 = 1.02212
-    expect(toEur(33.33)).toBe(30.66) // 33.33 * 0.92 = 30.6636
+    expect(toEur(1.111)).toBe(Math.round(1.111 * EUR_USD_RATE * 100) / 100)
+    expect(toEur(33.33)).toBe(Math.round(33.33 * EUR_USD_RATE * 100) / 100)
   })
 })
 

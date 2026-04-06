@@ -237,7 +237,7 @@ const platforms = [
         <div
           v-for="(feature, i) in features"
           :key="feature.title"
-          class="feature-card animate-fade-in-up rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5"
+          class="feature-card animate-fade-in-up rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 dark:border-gray-600 dark:bg-gray-800"
           :style="{ animationDelay: `${300 + i * 60}ms` }"
         >
           <div class="flex gap-4">
@@ -261,7 +261,7 @@ const platforms = [
           <div
             v-for="(p, i) in [...platforms, ...platforms]"
             :key="`${p.name}-${i}`"
-            class="flex items-center gap-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2.5 shrink-0"
+            class="flex items-center gap-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2.5 shrink-0 dark:border-gray-600 dark:bg-gray-800"
           >
             <UIcon :name="p.icon" class="size-5 text-[var(--ui-text-muted)]" />
             <span class="text-sm font-medium whitespace-nowrap">{{ p.name }}</span>

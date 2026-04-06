@@ -12,14 +12,14 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/ui": "^4.6.0",
-    "drizzle-orm": "^0.45.1",
+    "@nuxt/ui": "^4.6.1",
+    "drizzle-orm": "^0.45.2",
     "google-auth-library": "^10.6.2",
     "nuxt": "^4.4.2",
     "nuxt-auth-utils": "^0.5.29",
     "pg": "^8.20.0",
     "tailwindcss": "^4.2.2",
-    "vue": "^3.5.31"
+    "vue": "^3.5.32"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
