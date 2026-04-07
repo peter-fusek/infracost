@@ -1,6 +1,5 @@
-import { db } from '~/server/db'
-import { projects, costRecords, services, budgets } from '~/server/db/schema'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { projects } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
   // One-off migration: rename project slug 'instarea' → 'instarea.com'
