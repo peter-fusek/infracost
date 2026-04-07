@@ -106,6 +106,8 @@
 - Seed data: homegrif uses single Render app (homegrif-prod) serving .cz/.com/.sk via domain-locale middleware + pipeline worker + cron. Claude Max split into personal+instarea accounts
 - Countdown page uses Record<string,string> lookup maps for risk→color/icon instead of if-chains
 - GA4 analytics-config.ts: 388351377 is BudgetCo *account* ID, 529309393 is the *property* ID — don't confuse them
+- GA4 accounts: instarea.sk (319689036, 15 properties) + BudgetCo (388351377, 1 property). homegrif uses property 526515342 (www.homegrif.cz) — all 3 TLDs share one measurement ID G-M34JCH2Z35
+- instarea slug renamed to instarea.com (2026-04-07) — old 'instarea' merged into instarea.sk. Both .com and .sk GA4 tracking broken (G-7FX3ZTRPVL doesn't match any property stream)
 - Railway plan limits: $20/mo Pro (upgraded from Hobby $5/mo on 2026-03-31)
 - Pipeline minutes: estimated from deploy timestamps (~80-90% accurate), Render has no billing API for this
 - Pipeline minutes record excluded from DISTINCT ON query via `raw_data->>'type' != 'pipeline_minutes'` — uses dedicated parallel query instead

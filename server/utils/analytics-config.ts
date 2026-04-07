@@ -19,16 +19,15 @@ export interface ProjectAnalyticsConfig {
 // Service account: homegrif-reports@homegrif-analytics.iam.gserviceaccount.com
 export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
   { slug: 'infracost', ga4PropertyId: '529880367', gscSiteUrl: 'https://infracost.eu' },
-  { slug: 'homegrif.com', ga4PropertyId: '516113889', gscSiteUrl: 'https://homegrif.com' },
+  { slug: 'homegrif.com', ga4PropertyId: '526515342', gscSiteUrl: 'https://homegrif.com' }, // was 516113889 (dead stream), fixed to www.homegrif.cz property (G-M34JCH2Z35)
   { slug: 'oncoteam', ga4PropertyId: '529091873', gscSiteUrl: 'https://oncoteam.cloud' },
   { slug: 'oncofiles', ga4PropertyId: '529785236', gscSiteUrl: 'https://oncofiles.com' },
   { slug: 'contacts-refiner', ga4PropertyId: '529886218', gscSiteUrl: 'sc-domain:contactrefiner.com' },
   { slug: 'budgetco', ga4PropertyId: '529309393', gscSiteUrl: 'sc-domain:budgetco.eu' },
   { slug: 'pulseshape', ga4PropertyId: '494047490', gscSiteUrl: 'sc-domain:pulseshape.com' },
-  { slug: 'instarea', ga4PropertyId: '447834242', gscSiteUrl: 'sc-domain:instarea.com' }, // redirects to instarea.sk since 2026-03-31
+  { slug: 'instarea.com', ga4PropertyId: '447834242', gscSiteUrl: 'sc-domain:instarea.com' }, // historical data, .com→.sk redirect since 2026-03-31
   { slug: 'instarea.sk', ga4PropertyId: '530091886', gscSiteUrl: 'sc-domain:instarea.sk' },
-  { slug: 'scrabsnap', ga4PropertyId: '529720507', gscSiteUrl: null },
-  // robota removed — project no longer exists
+  { slug: 'scrabsnap', ga4PropertyId: '529720507', gscSiteUrl: null }, // no GSC property verified
 ]
 
 export function getAnalyticsConfig(slug: string): ProjectAnalyticsConfig | undefined {
