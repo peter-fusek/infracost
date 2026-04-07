@@ -19,7 +19,9 @@ export interface ProjectAnalyticsConfig {
 // Service account: homegrif-reports@homegrif-analytics.iam.gserviceaccount.com
 export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
   { slug: 'infracost', ga4PropertyId: '529880367', gscSiteUrl: 'https://infracost.eu' },
-  { slug: 'homegrif.com', ga4PropertyId: '526515342', gscSiteUrl: 'https://homegrif.com' }, // was 516113889 (dead stream), fixed to www.homegrif.cz property (G-M34JCH2Z35)
+  { slug: 'homegrif.com', ga4PropertyId: '526515342', gscSiteUrl: 'https://homegrif.com' }, // www.homegrif.cz property — shared CZ+COM until COM property created
+  { slug: 'homegrif.sk', ga4PropertyId: '531739129', gscSiteUrl: null }, // NEW 2026-04-07, measurement ID: G-YM9CSHN4YY
+  { slug: 'homegrif.cz', ga4PropertyId: '526515342', gscSiteUrl: 'sc-domain:homegrif.cz' }, // same as homegrif.com until separated
   { slug: 'oncoteam', ga4PropertyId: '529091873', gscSiteUrl: 'https://oncoteam.cloud' },
   { slug: 'oncofiles', ga4PropertyId: '529785236', gscSiteUrl: 'https://oncofiles.com' },
   { slug: 'contacts-refiner', ga4PropertyId: '529886218', gscSiteUrl: 'sc-domain:contactrefiner.com' },
