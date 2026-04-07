@@ -103,7 +103,7 @@
 - Service estimates: PATCH /api/services/:id supports monthlyCostEstimate field updates
 - Collection trigger: module-level rate limit (2min) and concurrent run guard — resets on deploy
 - Breakdown: NULL-serviceId cost records shown as synthetic "Unallocated" service rows (not hidden)
-- Seed data: projects merged (partners+homegrif → homegrif.com), Claude Max split into personal+instarea accounts
+- Seed data: homegrif uses single Render app (homegrif-prod) serving .cz/.com/.sk via domain-locale middleware + pipeline worker + cron. Claude Max split into personal+instarea accounts
 - Countdown page uses Record<string,string> lookup maps for risk→color/icon instead of if-chains
 - GA4 analytics-config.ts: 388351377 is BudgetCo *account* ID, 529309393 is the *property* ID — don't confuse them
 - Railway plan limits: $20/mo Pro (upgraded from Hobby $5/mo on 2026-03-31)

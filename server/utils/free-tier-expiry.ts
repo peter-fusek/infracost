@@ -72,6 +72,7 @@ export const FREE_TIER_EXPIRY: ExpiryItem[] = [
   { platform: 'Websupport', service: 'infracost.eu', expiresAt: '2027-03-18', description: 'Domain for InfraCost (.eu)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
   { platform: 'Websupport', service: 'budgetco.eu', expiresAt: '2027-03-18', description: 'Domain for BudgetCo (.eu)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
   { platform: 'Websupport', service: 'scrabsnap.com', expiresAt: '2027-03-27', description: 'Domain for ScrabSnap (.com)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
+  { platform: 'Websupport', service: 'homegrif.sk', expiresAt: '2027-04-08', description: 'Slovak domain for HomeGrif — standalone SK site, Tatrabanka demo (.sk)', impact: 'Domain expires. Auto-renews via credit.', monthlyAfter: 0.58, category: 'domain' },
 ]
 
 export interface ExpiryStatus extends ExpiryItem {

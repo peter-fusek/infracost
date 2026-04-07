@@ -21,12 +21,14 @@ export interface DriftItem {
 const DRIFT_IGNORE_LIST = new Set([
   // Suspended Render services (expected state)
   'Render_oncoteam-dashboard', 'Render_oncoteam-dashboard-test', 'Render_oncoteam-landing',
-  'Render_homegrif_com', 'Render_homegrif_com-test', 'Render_partners-cz-test',
-  // Removed Render DBs (migrated or deleted — expected)
+  'Render_homegrif-test', // srv-d6fedqh4tr6s73bshfj0 — suspended, candidate for deletion
+  // Removed Render services/DBs (old names from before rename + migrated/deleted)
+  'Render_homegrif_com', 'Render_homegrif_com-test',
+  'Render_partners-cz-prod', 'Render_partners-cz-test',
   'Render_infracost-db', 'Render_budgetco-db', 'Render_scrabsnap-db',
   'Render_partners-db-test', 'Render_partners-db-prod',
   'Render_oncoteam-db-test', 'Render_oncoteam-db-prod',
-  'Render_homegrif-db-test', 'Render_homegrif-db',
+  'Render_homegrif-db-test',
   // Removed Render services (migrated to Railway)
   'Render_instareaweb',
   // GitHub repos renamed/moved (expected 404s)
