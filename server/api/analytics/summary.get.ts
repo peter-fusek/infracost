@@ -29,6 +29,8 @@ export default defineEventHandler(async () => {
 
       return {
         ...project,
+        ga4PropertyId: config?.ga4PropertyId ?? null,
+        gscSiteUrl: config?.gscSiteUrl ?? null,
         ga4: ga4 ? {
           sessions: ga4.totals.sessions,
           users: ga4.totals.users,

@@ -23,6 +23,8 @@ interface ProjectAnalytics {
   slug: string
   name: string
   productionUrl: string | null
+  ga4PropertyId: string | null
+  gscSiteUrl: string | null
   ga4: {
     sessions: number
     users: number
@@ -110,6 +112,15 @@ function trend(values: number[]): { direction: 'up' | 'down' | 'flat'; pct: numb
   if (prior === 0) return { direction: recent > 0 ? 'up' : 'flat', pct: 0 }
   const pct = Math.round(((recent - prior) / prior) * 100)
   return { direction: pct > 5 ? 'up' : pct < -5 ? 'down' : 'flat', pct: Math.abs(pct) }
+}
+
+// External dashboard URLs
+function ga4Url(propertyId: string): string {
+  return `https://analytics.google.com/analytics/web/#/p${propertyId}/reports/reportinghub`
+}
+
+function gscUrl(siteUrl: string): string {
+  return `https://search.google.com/search-console/performance/search-analytics?resource_id=${encodeURIComponent(siteUrl)}`
 }
 
 // Expanded state for tips
@@ -210,6 +221,17 @@ function toggleTips(slug: string) {
                 <div class="flex items-center gap-2">
                   <UIcon name="i-lucide-users" class="size-4 text-emerald-500" />
                   <h3 class="text-sm font-medium">Traffic</h3>
+                  <a
+                    v-if="project.ga4PropertyId"
+                    :href="ga4Url(project.ga4PropertyId)"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-xs text-[var(--ui-primary)] hover:underline flex items-center gap-0.5"
+                    title="Open in Google Analytics"
+                  >
+                    <UIcon name="i-lucide-external-link" class="size-3" />
+                    GA4
+                  </a>
                   <UBadge
                     v-if="project.ga4.daily.length >= 14"
                     :color="trend(project.ga4.daily.map(d => d.sessions)).direction === 'up' ? 'success' : trend(project.ga4.daily.map(d => d.sessions)).direction === 'down' ? 'error' : ('neutral' as any)"
@@ -296,6 +318,17 @@ function toggleTips(slug: string) {
                 <div class="flex items-center gap-2">
                   <UIcon name="i-lucide-search" class="size-4 text-blue-500" />
                   <h3 class="text-sm font-medium">Search Performance</h3>
+                  <a
+                    v-if="project.gscSiteUrl"
+                    :href="gscUrl(project.gscSiteUrl)"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-xs text-[var(--ui-primary)] hover:underline flex items-center gap-0.5"
+                    title="Open in Search Console"
+                  >
+                    <UIcon name="i-lucide-external-link" class="size-3" />
+                    GSC
+                  </a>
                   <UBadge
                     v-if="project.gsc.daily.length >= 14"
                     :color="trend(project.gsc.daily.map(d => d.clicks)).direction === 'up' ? 'success' : trend(project.gsc.daily.map(d => d.clicks)).direction === 'down' ? 'error' : ('neutral' as any)"
