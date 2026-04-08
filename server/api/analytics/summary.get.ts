@@ -17,7 +17,8 @@ export default defineEventHandler(async () => {
     .where(and(eq(projects.isActive, true), isNull(projects.deletedAt)))
     .orderBy(projects.name)
 
-  const matchedSlugs = new Set<string>()
+  // Compute exclusion set upfront so both batches can run in parallel
+  const dbSlugs = new Set(allProjects.map(p => p.slug))
 
   async function fetchAnalytics(config: typeof ANALYTICS_CONFIG[number], project: { slug: string; name: string; productionUrl: string | null }) {
     const [ga4, gsc] = await Promise.all([
@@ -51,25 +52,25 @@ export default defineEventHandler(async () => {
     }
   }
 
-  const results = await Promise.all(
-    allProjects.map(async (project) => {
-      const config = ANALYTICS_CONFIG.find(c => c.slug === project.slug)
-      if (config) matchedSlugs.add(config.slug)
-      if (!config) return { ...project, ga4PropertyId: null, gscSiteUrl: null, ga4: null, gsc: null }
-      return fetchAnalytics(config, project)
-    }),
-  )
-
-  // Include analytics-only entries (GA4/GSC config without a DB project, e.g. homegrif.sk, homegrif.cz)
-  const analyticsOnly = await Promise.all(
-    ANALYTICS_CONFIG
-      .filter(c => !matchedSlugs.has(c.slug))
-      .map(config => fetchAnalytics(config, {
-        slug: config.slug,
-        name: config.slug.split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('.'),
-        productionUrl: null,
-      })),
-  )
+  // Fetch DB projects and analytics-only entries in parallel
+  const [results, analyticsOnly] = await Promise.all([
+    Promise.all(
+      allProjects.map(async (project) => {
+        const config = ANALYTICS_CONFIG.find(c => c.slug === project.slug)
+        if (!config) return { ...project, ga4PropertyId: null, gscSiteUrl: null, ga4: null, gsc: null }
+        return fetchAnalytics(config, project)
+      }),
+    ),
+    Promise.all(
+      ANALYTICS_CONFIG
+        .filter(c => !dbSlugs.has(c.slug))
+        .map(config => fetchAnalytics(config, {
+          slug: config.slug,
+          name: config.slug,
+          productionUrl: null,
+        })),
+    ),
+  ])
 
   const all = [...results, ...analyticsOnly]
 
