@@ -27,7 +27,7 @@ export const ANALYTICS_CONFIG: ProjectAnalyticsConfig[] = [
   { slug: 'contacts-refiner', ga4PropertyId: '529886218', gscSiteUrl: 'sc-domain:contactrefiner.com' },
   { slug: 'budgetco', ga4PropertyId: '529692948', gscSiteUrl: 'sc-domain:budgetco.eu' }, // moved to instarea.sk account (was 529309393 in separate BudgetCo account)
   { slug: 'pulseshape', ga4PropertyId: '494047490', gscSiteUrl: 'sc-domain:pulseshape.com' },
-  { slug: 'instarea.com', ga4PropertyId: '447834242', gscSiteUrl: 'sc-domain:instarea.com' }, // historical data, .com→.sk redirect since 2026-03-31
+  { slug: 'instarea.com', ga4PropertyId: '530091886', gscSiteUrl: 'sc-domain:instarea.com' }, // shares G-TTWKJ2JWP5 with instarea.sk (same Railway app), old property 447834242 orphaned
   { slug: 'instarea.sk', ga4PropertyId: '530091886', gscSiteUrl: 'sc-domain:instarea.sk' },
   { slug: 'scrabsnap', ga4PropertyId: '529720507', gscSiteUrl: null }, // no GSC property verified
 ]
