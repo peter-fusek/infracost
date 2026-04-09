@@ -1,6 +1,7 @@
 import { budgets } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
+  await requireUserSession(event)
   const body = await readBody(event)
   const { name, monthlyLimit, platformId, projectId, alertAt50, alertAt75, alertAt90, alertAt100 } = body as {
     name: string
