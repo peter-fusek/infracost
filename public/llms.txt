@@ -22,7 +22,7 @@ InfraCost is a self-hosted dashboard that tracks infrastructure spending across 
 - Drizzle ORM + PostgreSQL (Railway)
 - Google OAuth for authentication
 - Daily cron collection at 06:00 UTC
-- 183 tests across 15 files
+- 213 tests across 16 files
 
 ## Pages
 

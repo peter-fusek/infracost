@@ -1,9 +1,9 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'InfraCost — Stop Flying Blind on Infra Costs | Render, Railway, Neon, Turso & More',
-  ogTitle: 'InfraCost — Stop Flying Blind on Infra Costs | Render, Railway, Neon, Turso & More',
-  description: 'You ship fast and infra piles up. InfraCost tracks all 12 platforms — Render, Railway, Neon, Turso, Claude Max — alerts before overspend, counts down every free tier.',
-  ogDescription: 'Vibecoding spawns infra debt fast. InfraCost tracks 12 platforms automatically — Render, Railway, Anthropic, GCP, Claude Max and more. Budget alerts, free-tier expiry countdowns, drift detection, anomaly spikes, GitHub auto-discovery. USD + EUR.',
+  title: 'InfraCost — Track Free Tier Limits & Infra Costs Across 12 Platforms',
+  ogTitle: 'InfraCost — Track Free Tier Limits & Infra Costs Across 12 Platforms',
+  description: 'Track infrastructure costs across Render, Railway, Neon, Turso, Claude Max & 7 more platforms. Free tier expiry countdowns, budget alerts, weekly digest, per-project analytics. Built for indie developers.',
+  ogDescription: 'Stop logging into 12 dashboards to figure out what you spent. InfraCost pulls live costs from Render, Railway, Anthropic, GCP, Claude Max and more. Budget alerts, free-tier countdowns, drift detection, GA4+GSC analytics per project, weekly email digest. USD + EUR.',
   ogType: 'website',
   ogSiteName: 'InfraCost',
   ogUrl: 'https://infracost.eu',
@@ -25,7 +25,7 @@ useHead({
         url: 'https://infracost.eu',
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'Web',
-        description: 'Self-hosted dashboard that tracks infrastructure spending across 12 cloud and AI platforms. Built for vibecoders and indie builders who accumulate infra debt fast — budget alerts, free-tier expiry countdowns, drift detection, anomaly detection, and GitHub auto-discovery.',
+        description: 'Self-hosted dashboard that tracks infrastructure spending across 12 cloud and AI platforms. Built for indie developers who accumulate infra debt fast — budget alerts, free-tier expiry countdowns, drift detection, anomaly detection, GA4+GSC analytics per project, weekly email digest, and 213 automated tests.',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       }),
     },
@@ -159,13 +159,18 @@ const features = [
   },
   {
     icon: 'i-lucide-download',
-    title: 'Drill Down, Then Get Out of the Way',
-    description: 'Break costs down by platform or project. Sort by spend, filter by type, search services. Export to CSV for your accountant or your spreadsheet. Month-over-month trends per platform so you see what\'s creeping.',
+    title: 'Drill Down by Platform or Project',
+    description: 'Per-project budgets so each app has its own spend limit. Break costs down by platform or project, sort by spend, filter by type, search services. Export to CSV. Month-over-month trends per platform so you see what\'s creeping.',
+  },
+  {
+    icon: 'i-lucide-bar-chart-3',
+    title: 'See What Your Traffic Is Actually Worth',
+    description: 'GA4 traffic and Google Search Console performance per project — sessions, users, clicks, impressions, and a 0-100 SEO score. Know which projects earn their hosting costs and which are just burning money.',
   },
   {
     icon: 'i-lucide-shield-check',
     title: 'Built to Run Unattended',
-    description: 'Google OAuth with email allowlist. 183 automated tests. Weekly autonomous health checks. Collector retry with exponential backoff. 15s API timeouts. All amounts in both USD and EUR.',
+    description: 'Google OAuth with email allowlist. 213 automated tests. Weekly Monday email digest with MTD spend, budget %, and triage counts. Collector retry with exponential backoff. 15s API timeouts. All amounts in both USD and EUR.',
   },
 ]
 
@@ -199,7 +204,7 @@ const platforms = [
           </h1>
         </div>
         <p class="animate-fade-in-up mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-[var(--ui-text-muted)]" style="animation-delay: 100ms">
-          Render, Railway, Neon, Turso, Claude Max, Resend — every side project adds another line item. Free trials expire silently. Manual invoices go untracked. InfraCost pulls live costs from all 12 platforms, fires alerts before you overspend, and counts down every free tier, credit, and domain renewal you're about to miss.
+          Render, Railway, Neon, Turso, Claude Max, Resend — every side project adds another line item. Free trials expire silently. Manual invoices go untracked. InfraCost pulls live costs from all 12 platforms, fires alerts before you overspend, counts down every free tier and domain renewal, and sends a weekly digest so you never lose track.
         </p>
         <div class="animate-fade-in-up mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center" style="animation-delay: 200ms">
           <UButton
