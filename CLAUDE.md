@@ -118,3 +118,10 @@
 - Render service changes: update BOTH seed.ts AND live DB (PATCH /api/services/:id or one-off migration). Seed only inserts new, never updates existing.
 - EOM for Unallocated: breakdown.get.ts must check costType === 'subscription' to avoid extrapolating fixed costs (fixed 2026-04-09)
 - Render true cost: ~$131/mo (Professional $19 + web services + databases); seed estimates updated 2026-04-09
+- Seed endpoint: disabled in production (import.meta.prod guard). Only works in dev.
+- Collection trigger: single-instance only — module-level isRunning flag is process-local, won't work with Render horizontal scaling
+- Triage endpoint: returns `warnings[]` array when data sources fail — UI should check this
+- Notifications: one-time console.warn when email/WhatsApp config is missing — check Render logs if alerts stop
+- Error handling convention: all catch blocks must log error details (err.message), never empty catch. Enforced in hardening audit 2026-04-09
+- Security headers: HSTS (1yr), upgrade-insecure-requests, X-Frame-Options DENY, CSP with frame-ancestors 'none'
+- CVE overrides in package.json: defu, lodash, vite — check periodically if upstream fixed
