@@ -3,8 +3,15 @@
  * Used by budget-alerts and plan-limit-alerts services.
  */
 
+let emailConfigWarned = false
 export async function sendAlertEmail(message: string, severity: string, subject: string, config: Record<string, string>) {
-  if (!config.resendApiKey || !config.alertFromEmail || !config.alertToEmail) return
+  if (!config.resendApiKey || !config.alertFromEmail || !config.alertToEmail) {
+    if (!emailConfigWarned) {
+      console.warn('[notifications] Email notifications disabled — missing config:', { resendApiKey: !!config.resendApiKey, alertFromEmail: !!config.alertFromEmail, alertToEmail: !!config.alertToEmail })
+      emailConfigWarned = true
+    }
+    return
+  }
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -29,10 +36,17 @@ export async function sendAlertEmail(message: string, severity: string, subject:
   }
 }
 
+let whatsappConfigWarned = false
 export async function sendWhatsApp(message: string, config: Record<string, string>) {
   const phone = config.whatsappPhone
   const apikey = config.whatsappApikey
-  if (!phone || !apikey) return
+  if (!phone || !apikey) {
+    if (!whatsappConfigWarned) {
+      console.warn('[notifications] WhatsApp notifications disabled — missing config:', { phone: !!phone, apikey: !!apikey })
+      whatsappConfigWarned = true
+    }
+    return
+  }
   try {
     const encoded = encodeURIComponent(message)
     const response = await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encoded}&apikey=${apikey}`, {

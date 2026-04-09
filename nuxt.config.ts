@@ -33,6 +33,7 @@ export default defineNuxtConfig({
           'X-Content-Type-Options': 'nosniff',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
           'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
           'Content-Security-Policy': [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
@@ -41,6 +42,7 @@ export default defineNuxtConfig({
             "font-src 'self' data:",
             "connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
             "frame-ancestors 'none'",
+            "upgrade-insecure-requests",
           ].join('; '),
         },
       },

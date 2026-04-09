@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
 
   // Fan out to all sources in parallel — each individually caught
+  const warnings: string[] = []
   const [alertRows, expiryItems, depletionResult, limitsResult, reminderResult, driftResult] = await Promise.all([
     db.select({
       id: alerts.id,
@@ -32,19 +33,19 @@ export default defineEventHandler(async (event) => {
       ))
       .orderBy(desc(alerts.createdAt))
       .limit(50)
-      .catch(() => []),
+      .catch((err) => { console.error('[triage] alerts query failed:', err instanceof Error ? err.message : err); warnings.push('alerts'); return [] }),
 
     Promise.resolve(computeExpiryStatuses()),
 
     // Use event.$fetch for Nitro-internal calls (avoids relative URL issues in production)
-    event.$fetch('/api/depletion').catch(() => ({ platforms: [] })),
-    event.$fetch('/api/limits').catch(() => ({ platforms: [] })),
-    event.$fetch('/api/costs/manual-reminders').catch(() => ({ reminders: [] })),
+    event.$fetch('/api/depletion').catch((err) => { console.error('[triage] depletion fetch failed:', err instanceof Error ? err.message : err); warnings.push('depletion'); return { platforms: [] } }),
+    event.$fetch('/api/limits').catch((err) => { console.error('[triage] limits fetch failed:', err instanceof Error ? err.message : err); warnings.push('limits'); return { platforms: [] } }),
+    event.$fetch('/api/costs/manual-reminders').catch((err) => { console.error('[triage] reminders fetch failed:', err instanceof Error ? err.message : err); warnings.push('reminders'); return { reminders: [] } }),
 
     // Drift is the slowest — calls 3 external APIs
     (async () => {
       const { detectDrift } = await import('../../services/drift-detector')
-      return detectDrift(db, config as Record<string, string>).catch(() => [])
+      return detectDrift(db, config as Record<string, string>).catch((err) => { console.error('[triage] drift detection failed:', err instanceof Error ? err.message : err); warnings.push('drift'); return [] })
     })(),
   ])
 
@@ -88,6 +89,7 @@ export default defineEventHandler(async (event) => {
   return {
     items,
     counts: { red: redCount, yellow: yellowCount, total: items.length },
+    warnings,
     checkedAt: new Date().toISOString(),
   }
 })

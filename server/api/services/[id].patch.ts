@@ -14,9 +14,11 @@ export default defineEventHandler(async (event) => {
 
   const updates: Record<string, unknown> = {}
   if (typeof body.project === 'string') {
+    if (body.project.length > 200) throw createError({ statusCode: 400, message: 'Project name too long (max 200)' })
     updates.project = body.project.trim() || null
   }
   if (typeof body.name === 'string' && body.name.trim()) {
+    if (body.name.length > 200) throw createError({ statusCode: 400, message: 'Service name too long (max 200)' })
     updates.name = body.name.trim()
   }
   if (body.monthlyCostEstimate !== undefined) {

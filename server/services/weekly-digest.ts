@@ -86,8 +86,8 @@ export async function sendWeeklyDigest(db: ReturnType<typeof useDB>, config: Rec
       lines.push('')
     }
   }
-  catch {
-    // Non-fatal — skip pipeline minutes in digest
+  catch (err) {
+    console.warn('[weekly-digest] Pipeline minutes fetch failed:', err instanceof Error ? err.message : err)
   }
 
   // Active alerts

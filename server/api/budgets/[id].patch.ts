@@ -16,8 +16,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const updates: Record<string, unknown> = {}
-  if (name !== undefined) updates.name = name.trim()
-  if (monthlyLimit !== undefined) updates.monthlyLimit = String(monthlyLimit)
+  if (name !== undefined) {
+    if (typeof name !== 'string' || name.trim().length === 0) throw createError({ statusCode: 400, message: 'name must be a non-empty string' })
+    if (name.length > 200) throw createError({ statusCode: 400, message: 'name too long (max 200)' })
+    updates.name = name.trim()
+  }
+  if (monthlyLimit !== undefined) {
+    if (typeof monthlyLimit !== 'number' || !Number.isFinite(monthlyLimit) || monthlyLimit <= 0) throw createError({ statusCode: 400, message: 'monthlyLimit must be a positive number' })
+    if (monthlyLimit > 1_000_000) throw createError({ statusCode: 400, message: 'monthlyLimit too large (max 1,000,000)' })
+    updates.monthlyLimit = String(monthlyLimit)
+  }
   if (alertAt50 !== undefined) updates.alertAt50 = alertAt50
   if (alertAt75 !== undefined) updates.alertAt75 = alertAt75
   if (alertAt90 !== undefined) updates.alertAt90 = alertAt90

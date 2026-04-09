@@ -22,8 +22,8 @@ export default defineEventHandler(async () => {
 
   async function fetchAnalytics(config: typeof ANALYTICS_CONFIG[number], project: { slug: string; name: string; productionUrl: string | null }) {
     const [ga4, gsc] = await Promise.all([
-      config.ga4PropertyId ? fetchGA4Traffic(config.ga4PropertyId, 30).catch(() => null) : Promise.resolve(null),
-      config.gscSiteUrl ? fetchGSCPerformance(config.gscSiteUrl, 30).catch(() => null) : Promise.resolve(null),
+      config.ga4PropertyId ? fetchGA4Traffic(config.ga4PropertyId, 30).catch((err) => { console.warn('[analytics-summary] GA4 failed for', config.slug + ':', err instanceof Error ? err.message : err); return null }) : Promise.resolve(null),
+      config.gscSiteUrl ? fetchGSCPerformance(config.gscSiteUrl, 30).catch((err) => { console.warn('[analytics-summary] GSC failed for', config.slug + ':', err instanceof Error ? err.message : err); return null }) : Promise.resolve(null),
     ])
 
     return {

@@ -140,8 +140,8 @@ export async function persistAnomalyAlerts(db: DB, anomalies: AnomalyResult[], c
         await sendAlertEmail(message, severity, `Anomaly: ${anomaly.platform} spending spike`, config)
         await sendWhatsApp(message, config)
       }
-      catch {
-        console.error(`[anomaly-detector] Notification failed for ${anomaly.platformSlug}`)
+      catch (err) {
+        console.error(`[anomaly-detector] Notification failed for ${anomaly.platformSlug}:`, err instanceof Error ? err.message : err)
       }
     }
   }

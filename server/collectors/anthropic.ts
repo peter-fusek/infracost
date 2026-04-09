@@ -129,8 +129,8 @@ export function createAnthropicCollector(apiKey: string, platformId: number, ser
               }
             }
           }
-          catch {
-            // Usage report failure is non-critical — we already have cost data
+          catch (err) {
+            errors.push(`Anthropic usage report failed: ${err instanceof Error ? err.message : String(err)}`)
           }
 
           return { records, errors, accountIdentifier }

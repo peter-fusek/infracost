@@ -79,10 +79,15 @@ export async function checkBudgetAlerts(db: ReturnType<typeof import('../utils/d
 
       // Send email + WhatsApp for warning and critical alerts
       if (config && (threshold.severity === 'warning' || threshold.severity === 'critical')) {
-        await Promise.all([
-          sendAlertEmail(message, threshold.severity, message.substring(0, 80), config),
-          sendWhatsApp(`🚨 InfraCost ${threshold.severity}: ${message}`, config),
-        ])
+        try {
+          await Promise.all([
+            sendAlertEmail(message, threshold.severity, message.substring(0, 80), config),
+            sendWhatsApp(`🚨 InfraCost ${threshold.severity}: ${message}`, config),
+          ])
+        }
+        catch (err) {
+          console.error(`[budget-alerts] Notification failed for budget ${budget.name}:`, err instanceof Error ? err.message : err)
+        }
       }
 
       // Only create the highest threshold alert, not all lower ones

@@ -191,8 +191,8 @@ export async function detectDrift(db: DB, config: Record<string, string>): Promi
             }
           }
         }
-        catch {
-          // Individual repo check failure — not critical
+        catch (err) {
+          console.warn('[drift-detector] Repo check failed for', repoPath + ':', err instanceof Error ? err.message : err)
         }
       }
     }
@@ -271,8 +271,8 @@ export async function persistDriftAlerts(db: DB, drifts: DriftItem[], config: Re
         await sendAlertEmail(message, severity, `Drift: ${drift.platform} service removed`, config)
         await sendWhatsApp(message, config)
       }
-      catch {
-        console.error(`[drift-detector] Notification failed for ${drift.name}`)
+      catch (err) {
+        console.error(`[drift-detector] Notification failed for ${drift.name}:`, err instanceof Error ? err.message : err)
       }
     }
   }

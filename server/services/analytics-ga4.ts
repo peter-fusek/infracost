@@ -143,8 +143,8 @@ export async function fetchGA4Traffic(propertyId: string, days: number = 30): Pr
         }
       }
     }
-    catch {
-      // Bot detection failure is non-critical
+    catch (err) {
+      console.warn('[analytics-ga4] Bot detection failed:', err instanceof Error ? err.message : err)
     }
   }
   catch (err) {

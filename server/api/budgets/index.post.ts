@@ -16,8 +16,14 @@ export default defineEventHandler(async (event) => {
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     throw createError({ statusCode: 400, message: 'name is required' })
   }
+  if (name.length > 200) {
+    throw createError({ statusCode: 400, message: 'name too long (max 200)' })
+  }
   if (!monthlyLimit || typeof monthlyLimit !== 'number' || monthlyLimit <= 0) {
     throw createError({ statusCode: 400, message: 'monthlyLimit must be a positive number' })
+  }
+  if (monthlyLimit > 1_000_000) {
+    throw createError({ statusCode: 400, message: 'monthlyLimit too large (max 1,000,000)' })
   }
   if (platformId && projectId) {
     throw createError({ statusCode: 400, message: 'Budget cannot be scoped to both a platform and a project' })

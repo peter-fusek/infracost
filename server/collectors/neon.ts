@@ -46,8 +46,8 @@ export function createNeonCollector(apiKey: string, platformId: number): BaseCol
             const projData = await projRes.json() as { projects: Array<{ id: string }> }
             projectCount = projData.projects?.length ?? null
           }
-        } catch {
-          // Non-critical — project count is best-effort
+        } catch (err) {
+          errors.push(`Neon project count failed: ${err instanceof Error ? err.message : String(err)}`)
         }
 
         records.push({

@@ -30,7 +30,8 @@ export default defineEventHandler(async (event) => {
   // Alert type filter (prefix match for grouped types like drift_*, anomaly_*)
   const alertType = String(query.type || '')
   if (alertType) {
-    conditions.push(like(alerts.alertType, `${alertType}%`))
+    const safeType = alertType.replace(/[%_\\]/g, '\\$&')
+    conditions.push(like(alerts.alertType, `${safeType}%`))
   }
 
   // Date range: default current month, ?months=3 for last 3 months, ?months=all for everything

@@ -2,8 +2,12 @@ import { eq } from 'drizzle-orm'
 import { platforms, services, budgets, optimizations, projects } from '../db/schema'
 import { platformSeed, serviceSeed, budgetSeed, optimizationSeed, projectSeed } from '../db/seed'
 
-/** Seed platform and service inventory. Idempotent — skips existing records. */
-export default defineEventHandler(async () => {
+/** Seed platform and service inventory. Idempotent — skips existing records. Dev/setup only. */
+export default defineEventHandler(async (event) => {
+  await requireUserSession(event)
+  if (import.meta.prod) {
+    throw createError({ statusCode: 403, message: 'Seed endpoint disabled in production' })
+  }
   const db = useDB()
   const results = { platforms: 0, services: 0, budgets: 0, optimizations: 0, projects: 0 }
 

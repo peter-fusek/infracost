@@ -15,7 +15,12 @@ export default defineEventHandler(async (event) => {
   if (body.amount !== undefined) {
     updates.amount = String(parseAmount(body.amount))
   }
-  if (body.notes !== undefined) updates.notes = body.notes
+  if (body.notes !== undefined) {
+    if (typeof body.notes !== 'string' || body.notes.length > 2000) {
+      throw createError({ statusCode: 400, message: 'Notes must be a string of max 2000 characters' })
+    }
+    updates.notes = body.notes
+  }
 
   if (Object.keys(updates).length === 0) {
     throw createError({ statusCode: 400, message: 'Nothing to update' })
