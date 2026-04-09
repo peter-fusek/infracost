@@ -114,3 +114,7 @@
 - Pipeline minutes manual override is ephemeral — wiped on next collection run (delete-before-insert dedup)
 - EUR_USD_RATE sync points (6 total): server/utils/currency.ts, nuxt.config.ts (public.eurUsdRate), 3 page fallbacks (index/trends/breakdown `?? 0.87`), manual-platforms.ts comment
 - Dark mode: Nuxt UI v4 --ui-bg-elevated ≈ body bg in dark theme; UCard ring-default also too subtle. Use colored accent borders (border-l-3 border-l-emerald-500) for card visibility
+- Render service names: DB service `name` must match Render API name exactly — collector uses name→serviceId map; mismatches land in "Unallocated"
+- Render service changes: update BOTH seed.ts AND live DB (PATCH /api/services/:id or one-off migration). Seed only inserts new, never updates existing.
+- EOM for Unallocated: breakdown.get.ts must check costType === 'subscription' to avoid extrapolating fixed costs (fixed 2026-04-09)
+- Render true cost: ~$131/mo (Professional $19 + web services + databases); seed estimates updated 2026-04-09
