@@ -166,7 +166,8 @@ export default defineEventHandler(async (event) => {
       if (total <= 0) continue
       const platformInfo = allServices.find(s => s.platformId === a.platformId)
       if (!platformInfo) continue
-      const eom = progress > 0 ? total / progress : total
+      const isFixed = a.costType === 'subscription' || a.costType === 'one_time'
+      const eom = isFixed ? total : (progress > 0 ? total / progress : total)
       allSvcBreakdowns.push({
         serviceId: -a.platformId, // negative ID for synthetic rows
         name: 'Unallocated',

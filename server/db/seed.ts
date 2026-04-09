@@ -18,18 +18,18 @@ export const platformSeed = [
 ] as const
 
 // Service seed data — known services from our infrastructure
-// Updated 2026-03-24: merged partners+homegrif→homegrif.com, split Claude Max accounts, fixed GCP, added Websupport domains
+// Updated 2026-04-09: fixed Render service names to match API, updated estimates to actual billing
 export const serviceSeed = [
   // Render — Professional plan
   { platformSlug: 'render', name: 'Professional Plan', project: null, serviceType: 'subscription', monthlyCostEstimate: '19.00' },
 
   // Render — Web services (homegrif — single app serves .cz/.com/.sk via domain-locale middleware)
-  { platformSlug: 'render', name: 'homegrif-prod', project: 'homegrif.com', serviceType: 'web', monthlyCostEstimate: '7.13' },
+  { platformSlug: 'render', name: 'homegrif-prod', project: 'homegrif.com', serviceType: 'web', monthlyCostEstimate: '24.50' }, // Standard plan
   { platformSlug: 'render', name: 'homegrif-test', project: 'homegrif.com', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED — candidate for deletion
-  { platformSlug: 'render', name: 'homegrif-pipeline', project: 'homegrif.com', serviceType: 'worker', monthlyCostEstimate: '7.00' },
-  { platformSlug: 'render', name: 'scrabsnap', project: 'scrabsnap', serviceType: 'web', monthlyCostEstimate: '2.57' },
-  { platformSlug: 'render', name: 'budgetco', project: 'budgetco', serviceType: 'web', monthlyCostEstimate: '2.14' },
-  { platformSlug: 'render', name: 'contacts-refiner-dashboard', project: 'contacts-refiner', serviceType: 'web', monthlyCostEstimate: '2.23' },
+  { platformSlug: 'render', name: 'homegrif-pipeline', project: 'homegrif.com', serviceType: 'worker', monthlyCostEstimate: '6.85' }, // Starter plan
+  { platformSlug: 'render', name: 'scrabsnap', project: 'scrabsnap', serviceType: 'web', monthlyCostEstimate: '6.85' }, // Starter plan (was Free, upgraded)
+  { platformSlug: 'render', name: 'budgetco', project: 'budgetco', serviceType: 'web', monthlyCostEstimate: '6.85' }, // Starter plan (was Free, upgraded)
+  { platformSlug: 'render', name: 'contactrefiner-dashboard', project: 'contacts-refiner', serviceType: 'web', monthlyCostEstimate: '6.85' }, // Starter plan (renamed from contacts-refiner-dashboard)
   { platformSlug: 'render', name: 'instareaweb', project: 'instarea', serviceType: 'web', monthlyCostEstimate: '0.00' }, // DELETED — migrated to Railway (loyal-creativity)
   { platformSlug: 'render', name: 'oncoteam-dashboard', project: 'oncoteam', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED — migrated to Railway
   { platformSlug: 'render', name: 'oncoteam-dashboard-test', project: 'oncoteam', serviceType: 'web', monthlyCostEstimate: '0.00' }, // SUSPENDED
@@ -38,8 +38,8 @@ export const serviceSeed = [
   // Render — Databases (homegrif — single active DB, old partners DBs removed)
   { platformSlug: 'render', name: 'homegrif-db', project: 'homegrif.com', serviceType: 'database', monthlyCostEstimate: '6.42' }, // dpg-d6fgkrhdrdic739vgo7g-a
   { platformSlug: 'render', name: 'scrabsnap-db', project: 'scrabsnap', serviceType: 'database', monthlyCostEstimate: '10.70' },
-  { platformSlug: 'render', name: 'budgetco-db', project: 'budgetco', serviceType: 'database', monthlyCostEstimate: '0.00' },
-  { platformSlug: 'render', name: 'infracost', project: 'infracost', serviceType: 'web', monthlyCostEstimate: '7.00' }, // Starter plan, upgraded from free 2026-03-24
+  { platformSlug: 'render', name: 'budgetco-db', project: 'budgetco', serviceType: 'database', monthlyCostEstimate: '6.19' }, // Basic 256MB (free tier ended)
+  { platformSlug: 'render', name: 'infracost', project: 'infracost', serviceType: 'web', monthlyCostEstimate: '6.85' }, // Starter plan, upgraded from free 2026-03-24
   { platformSlug: 'render', name: 'infracost-db', project: 'infracost', serviceType: 'database', monthlyCostEstimate: '6.42' },
   { platformSlug: 'render', name: 'oncoteam-db-prod', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' }, // SUSPENDED — migrated to Railway
   { platformSlug: 'render', name: 'oncoteam-db-test', project: 'oncoteam', serviceType: 'database', monthlyCostEstimate: '0.00' }, // SUSPENDED
