@@ -4,6 +4,9 @@
 - `pnpm build` — production build (Nitro + Nuxt)
 - `pnpm dev` — dev server on port 3000
 - `pnpm drizzle-kit generate --name <name>` — create migration
+- `pnpm verify:cli` — visual verification via CLIs (gh, gcloud, anthropic curl, railway); requires `INFRACOST_COOKIE` for remote
+- `pnpm verify:cli:dry` — dry-run CLI verification (no POSTs)
+- Browser verification: run `/verify-browser` in Claude Code (uses Claude-in-Chrome MCP, see `scripts/verify-browser-prompt.md`)
 - `pnpm drizzle-kit push` — apply schema to DB (runs in Render build command)
 - `pnpm nuxt typecheck` — type checking (0 errors as of Sprint 30; `pnpm nuxt typecheck` has vue-tsc module resolution issue, use `npx vue-tsc --noEmit` instead)
 
@@ -31,12 +34,13 @@
   - API: GET /api/analytics/traffic, /api/analytics/search, /api/analytics/summary
   - SEO scoring: 0-100 based on CTR, position, impressions, click volume, trend direction
   - LLMEO tips: structured data, content recommendations for AI crawler visibility
-- Pages: 12 total (/, /breakdown, /trends, /optimizations, /countdown, /triage, /alerts, /analytics, /status, /platforms, /budgets, /manual)
+- Pages: 13 total (/, /breakdown, /trends, /optimizations, /countdown, /triage, /alerts, /analytics, /status, /platforms, /budgets, /manual, /verify)
   - /countdown = merged Depletion + Limits + Free Tier Expiry — urgency-sorted + Monthly Tasks (manual platform reminders)
   - /alerts = filterable alert history (severity, status, type, date range) with acknowledge/resolve actions
   - /status = UptimeRobot monitors + Projects grid (expandable with change timeline) + Drift alerts + GitHub Discovery (auth-gated)
   - Project cards: clickable expand with change history, yellow ring for "recently changed" (7 days)
   - /triage = unified "Needs Attention" view — aggregates yellows/reds from alerts, countdown, drift, manual reminders with action buttons
+  - /verify = cross-check infracost MTD vs platform billing UI (manual, browser, cli methods); alerts on mismatch >2%/>$1 or stale >14d
   - /depletion, /limits redirect 301 → /countdown
 - Manual cost reminders: GET /api/costs/manual-reminders — tracks last-recorded date per manual platform, overdue >35 days
 - Weekly digest: server/tasks/weekly-digest.ts — Mondays 07:00 UTC, emails MTD spend, budget %, active alerts, manual reminders, cost variance alerts (>20% deviation), triage counts with CTA

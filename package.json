@@ -9,6 +9,8 @@
     "preview": "nuxt preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify:cli": "bash scripts/verify-cli.sh",
+    "verify:cli:dry": "DRY_RUN=1 bash scripts/verify-cli.sh",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
