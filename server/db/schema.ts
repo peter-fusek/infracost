@@ -12,6 +12,8 @@ export const effortEnum = pgEnum('effort', ['trivial', 'small', 'medium', 'large
 export const actorTypeEnum = pgEnum('actor_type', ['system', 'user', 'ai'])
 export const collectionRunStatusEnum = pgEnum('collection_run_status', ['running', 'success', 'partial', 'failed'])
 export const verificationMethodEnum = pgEnum('verification_method', ['manual', 'browser', 'cli', 'api'])
+export const invoiceSourceEnum = pgEnum('invoice_source', ['platform_api', 'email_parse', 'manual'])
+export const reconciliationStatusEnum = pgEnum('reconciliation_status', ['match', 'over', 'under', 'no_invoice', 'no_records'])
 
 // --- Projects ---
 
@@ -74,6 +76,7 @@ export const costRecords = pgTable('cost_records', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   platformId: integer('platform_id').notNull().references(() => platforms.id),
   serviceId: integer('service_id').references(() => services.id),
+  invoiceId: integer('invoice_id'), // FK added after invoices table declared below
   recordDate: timestamp('record_date').notNull(), // date this cost applies to
   periodStart: timestamp('period_start').notNull(),
   periodEnd: timestamp('period_end').notNull(),
@@ -91,6 +94,7 @@ export const costRecords = pgTable('cost_records', {
   index('idx_cost_records_period').on(t.periodStart, t.periodEnd),
   index('idx_cost_records_platform_period').on(t.platformId, t.periodStart, t.periodEnd),
   index('idx_cost_records_record_date').on(t.recordDate),
+  index('idx_cost_records_invoice').on(t.invoiceId),
 ])
 
 // --- Budgets ---
@@ -153,16 +157,43 @@ export const optimizations = pgTable('optimizations', {
 export const invoices = pgTable('invoices', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   platformId: integer('platform_id').notNull().references(() => platforms.id),
+  invoiceNumber: varchar('invoice_number', { length: 100 }),
   invoiceDate: timestamp('invoice_date').notNull(),
   periodStart: timestamp('period_start').notNull(),
   periodEnd: timestamp('period_end').notNull(),
   totalAmount: numeric('total_amount', { precision: 10, scale: 2 }).notNull(),
   currency: varchar({ length: 3 }).notNull().default('USD'),
+  sourceSystem: invoiceSourceEnum('source_system').notNull().default('manual'),
+  checksum: varchar({ length: 64 }), // sha256 hex for dedup
+  pdfData: text('pdf_data'), // base64-encoded PDF, ~5MB cap enforced at handler
+  pdfUrl: varchar('pdf_url', { length: 1000 }), // external PDF link when we don't store bytes (e.g. Turso API)
   rawData: jsonb('raw_data'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
-})
+}, (t) => [
+  index('idx_invoices_platform_period').on(t.platformId, t.periodStart),
+  index('idx_invoices_checksum').on(t.checksum),
+])
+
+// --- Reconciliation Runs ---
+// One row per (platform, year, month, runAt) — audit trail of whether
+// infracost's cost_records totals matched the authoritative invoice totals.
+
+export const reconciliationRuns = pgTable('reconciliation_runs', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  year: integer().notNull(),
+  month: integer().notNull(), // 1-12
+  platformId: integer('platform_id').notNull().references(() => platforms.id),
+  costRecordsSum: numeric('cost_records_sum', { precision: 10, scale: 4 }).notNull(),
+  invoicesSum: numeric('invoices_sum', { precision: 10, scale: 4 }).notNull(),
+  delta: numeric({ precision: 10, scale: 4 }).notNull(),
+  deltaPct: numeric('delta_pct', { precision: 8, scale: 4 }),
+  status: reconciliationStatusEnum().notNull(),
+  runAt: timestamp('run_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_recon_platform_period').on(t.platformId, t.year, t.month),
+])
 
 // --- Audit Log ---
 

@@ -19,6 +19,8 @@ import { detectAnomalies, persistAnomalyAlerts } from '../services/anomaly-detec
 import { refreshClaudeMaxWeights } from '../utils/attribution'
 import { checkUnallocatedAlert } from '../services/unallocated-alerts'
 import { checkVerificationAlerts } from '../services/verification-alerts'
+import { reconcileAll, persistReconciliationRun } from '../services/reconciliation'
+import { ingestTursoInvoices } from '../services/turso-invoice-ingest'
 
 export default defineTask({
   meta: {
@@ -232,6 +234,41 @@ export default defineTask({
       console.error('[collect] Verification alerts check failed:', verificationError)
     }
 
+    // Turso invoice ingestion — only platform with a clean invoice API today.
+    // Populates the invoices table so reconciliation has something to compare against.
+    let tursoInvoicesIngested = 0
+    let tursoInvoicesError: string | null = null
+    if (config.tursoApiToken) {
+      try {
+        const out = await ingestTursoInvoices(db, config.tursoApiToken as string)
+        tursoInvoicesIngested = out.inserted
+        if (out.errors.length > 0) {
+          tursoInvoicesError = out.errors.join('; ')
+          console.warn('[collect] Turso invoice ingest warnings:', tursoInvoicesError)
+        }
+      }
+      catch (err) {
+        tursoInvoicesError = err instanceof Error ? err.message : String(err)
+        console.error('[collect] Turso invoice ingest failed:', tursoInvoicesError)
+      }
+    }
+
+    // Reconciliation — compare cost_records sum vs invoices sum per platform for current month
+    let reconciliationSaved = 0
+    let reconciliationMismatches = 0
+    let reconciliationError: string | null = null
+    try {
+      const now = new Date()
+      const results = await reconcileAll(db, now.getUTCFullYear(), now.getUTCMonth() + 1)
+      const out = await persistReconciliationRun(db, results, config as unknown as Record<string, string>)
+      reconciliationSaved = out.saved
+      reconciliationMismatches = out.mismatches
+    }
+    catch (err) {
+      reconciliationError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Reconciliation failed:', reconciliationError)
+    }
+
     // Run drift detection + persist alerts
     let drifts: Awaited<ReturnType<typeof detectDrift>> = []
     let driftAlertCount = 0
@@ -266,10 +303,13 @@ export default defineTask({
       attributionBasis,
       unallocatedAlert,
       verificationAlerts,
+      tursoInvoicesIngested,
+      reconciliationSaved,
+      reconciliationMismatches,
       drifts,
       driftAlertCount,
       anomalies,
-      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, verificationError, driftError, anomalyError },
+      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, verificationError, reconciliationError, tursoInvoicesError, driftError, anomalyError },
     }
   },
 })

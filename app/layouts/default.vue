@@ -17,6 +17,7 @@ const navigation = [
   { label: 'Budgets', icon: 'i-lucide-wallet', to: '/budgets' },
   { label: 'Manual Entry', icon: 'i-lucide-pencil', to: '/manual' },
   { label: 'Verify', icon: 'i-lucide-shield-check', to: '/verify' },
+  { label: 'Reconciliation', icon: 'i-lucide-scale', to: '/reconciliation' },
 ]
 
 // Pending alerts badge count
