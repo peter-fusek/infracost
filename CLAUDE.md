@@ -1,5 +1,24 @@
 # InfraCost — infracost.eu
 
+## Meta-principle: fix the class, not the instance
+When fixing a bug, ask: "What invariant would make this class of bug impossible, and how expensive is it to enforce?" If the invariant is <2h, ship it alongside the fix. If >2h, file as a systematic-prevention issue. See #92 for the session retrospective that established this.
+
+## Data sources of truth (hierarchy)
+1. **`invoices` = authoritative** when present (what we actually got billed)
+2. **`cost_records` = fallback** when no invoice yet (month in progress, collector data)
+3. **`verifications` = independent cross-check** (what a human or automation saw on the platform UI) — does NOT feed into totals
+4. **`reconciliation_runs` = audit log** of delta between 1 and 2
+- Don't reshuffle this hierarchy without updating #92 and this doc.
+
+## Cross-repo issue rule
+Before filing an issue in a non-infracost repo that proposes API/SDK/library changes, VERIFY against docs first. Include a `docs-verified: <URL>` footer in the issue body, or a top-level comment citing the docs that confirm the proposed mechanism. See #91 for the phantom `anthropic-workspace-id` header incident that established this rule.
+
+## Storage rules
+- Never write state to `.data/*.json` — Render's disk is ephemeral, wiped on every deploy. Use Postgres tables. Enforced by grep check in CI (see #92).
+- If a new table needs default values, render them with a staleness chip (`last updated N days ago`) if older than 14 days — prevents silent-fallback bugs (#86, #92).
+
+
+
 ## Build & Dev
 - `pnpm build` — production build (Nitro + Nuxt)
 - `pnpm dev` — dev server on port 3000

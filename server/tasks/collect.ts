@@ -21,6 +21,7 @@ import { checkUnallocatedAlert } from '../services/unallocated-alerts'
 import { checkVerificationAlerts } from '../services/verification-alerts'
 import { reconcileAll, persistReconciliationRun } from '../services/reconciliation'
 import { ingestTursoInvoices } from '../services/turso-invoice-ingest'
+import { checkInvariants } from '../services/invariant-checks'
 
 export default defineTask({
   meta: {
@@ -234,6 +235,18 @@ export default defineTask({
       console.error('[collect] Verification alerts check failed:', verificationError)
     }
 
+    // Invariant checks — fire if any system-wide assumption is violated
+    let invariantViolations = 0
+    let invariantError: string | null = null
+    try {
+      const out = await checkInvariants(db, config as unknown as Record<string, string>)
+      invariantViolations = out.firedAlerts
+    }
+    catch (err) {
+      invariantError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Invariant checks failed:', invariantError)
+    }
+
     // Turso invoice ingestion — only platform with a clean invoice API today.
     // Populates the invoices table so reconciliation has something to compare against.
     let tursoInvoicesIngested = 0
@@ -304,12 +317,13 @@ export default defineTask({
       unallocatedAlert,
       verificationAlerts,
       tursoInvoicesIngested,
+      invariantViolations,
       reconciliationSaved,
       reconciliationMismatches,
       drifts,
       driftAlertCount,
       anomalies,
-      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, verificationError, reconciliationError, tursoInvoicesError, driftError, anomalyError },
+      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, verificationError, reconciliationError, tursoInvoicesError, invariantError, driftError, anomalyError },
     }
   },
 })

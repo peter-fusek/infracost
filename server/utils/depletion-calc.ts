@@ -17,7 +17,12 @@ export interface DepletionStatus {
   mtd: number
   eomEstimate: number
   riskLevel: 'ok' | 'warning' | 'critical' | 'depleted'
+  balanceUpdatedAt: string
+  balanceDaysOld: number
+  balanceIsStale: boolean
 }
+
+const STALE_BALANCE_DAYS = 14
 
 export async function computeDepletionStatuses(
   db: ReturnType<typeof import('./db').useDB>,
@@ -78,6 +83,9 @@ export async function computeDepletionStatuses(
       mtd: Math.round(mtd * 100) / 100,
       eomEstimate: Math.round(eom * 100) / 100,
       riskLevel,
+      balanceUpdatedAt: prepaid.updatedAt,
+      balanceDaysOld: daysSinceUpdate,
+      balanceIsStale: daysSinceUpdate > STALE_BALANCE_DAYS,
     })
   }
 
