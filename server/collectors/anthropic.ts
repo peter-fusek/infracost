@@ -56,7 +56,12 @@ interface UsageReportResponse {
   next_page: string | null
 }
 
-export function createAnthropicCollector(apiKey: string, platformId: number, serviceId?: number): BaseCollector {
+export function createAnthropicCollector(
+  apiKey: string,
+  platformId: number,
+  serviceId?: number,
+  workspaceServiceMap?: Map<string, number>,
+): BaseCollector {
   return {
     platformSlug: 'anthropic',
 
@@ -86,37 +91,67 @@ export function createAnthropicCollector(apiKey: string, platformId: number, ser
           return { records, errors, accountIdentifier }
         }
 
-        let totalCents = 0
+        // Sum cents per workspace_id ('' = default/no workspace)
+        const centsByWorkspace = new Map<string, number>()
         const workspaceIds = new Set<string>()
         for (const bucket of buckets) {
           for (const item of bucket.results) {
-            totalCents += parseFloat(item.amount || '0')
+            const wsId = item.workspace_id ?? ''
+            const cents = parseFloat(item.amount || '0')
+            centsByWorkspace.set(wsId, (centsByWorkspace.get(wsId) ?? 0) + cents)
             if (item.workspace_id) workspaceIds.add(item.workspace_id)
           }
         }
-        const totalUsd = totalCents / 100
 
-        // Always push a record — even $0 — so the run is "success" not "partial with 0 records"
-        // and stale data gets cleared by the delete-before-insert dedup in collect.ts.
-        records.push({
-          platformId,
-          serviceId,
-          recordDate: new Date(),
-          periodStart,
-          periodEnd,
-          amount: totalUsd.toFixed(4),
-          currency: 'USD',
-          costType: 'usage',
-          collectionMethod: 'api',
-          rawData: {
-            source: 'cost_report',
-            buckets,
-            totalCents,
-            workspaceIds: [...workspaceIds],
-          },
-        })
+        // Emit one record per workspace — linked to a per-workspace service row
+        // via services.externalId, or fall back to default serviceId (Unallocated).
+        // This is the attribution hook: as each project adds workspace_id tagging
+        // and we seed a matching service row, that slice moves out of Unallocated.
+        let totalCents = 0
+        for (const [wsId, cents] of centsByWorkspace) {
+          totalCents += cents
+          const resolvedServiceId = workspaceServiceMap?.get(wsId) ?? serviceId
+          records.push({
+            platformId,
+            serviceId: resolvedServiceId,
+            recordDate: new Date(),
+            periodStart,
+            periodEnd,
+            amount: (cents / 100).toFixed(4),
+            currency: 'USD',
+            costType: 'usage',
+            collectionMethod: 'api',
+            rawData: {
+              source: 'cost_report',
+              workspaceId: wsId || null,
+              cents,
+            },
+          })
+        }
+
+        // If there were no buckets at all, emit a $0 placeholder so the run
+        // registers as success and stale data gets cleared by dedup.
+        if (records.length === 0) {
+          records.push({
+            platformId,
+            serviceId,
+            recordDate: new Date(),
+            periodStart,
+            periodEnd,
+            amount: '0.0000',
+            currency: 'USD',
+            costType: 'usage',
+            collectionMethod: 'api',
+            rawData: { source: 'cost_report', empty: true },
+          })
+        }
 
         accountIdentifier = workspaceIds.size > 0 ? [...workspaceIds].join(', ') : undefined
+
+        // Attach aggregate totals to the first record for audit purposes
+        const firstRaw = records[0]!.rawData as Record<string, unknown>
+        firstRaw.totalCents = totalCents
+        firstRaw.workspaceIds = [...workspaceIds]
 
         // Enrich with token counts from usage_report (optional — don't fail the record if this fails)
         try {

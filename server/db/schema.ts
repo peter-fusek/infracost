@@ -175,6 +175,23 @@ export const auditLog = pgTable('audit_log', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// --- Cost Attribution Weights ---
+// Per-platform split rules for costs that can't be directly attributed
+// (e.g. Claude Max subscription spread across projects).
+// Weights per platform must sum to ~1.0.
+
+export const costAttributionWeights = pgTable('cost_attribution_weights', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  platformId: integer('platform_id').notNull().references(() => platforms.id),
+  projectSlug: varchar('project_slug', { length: 100 }).notNull(),
+  weight: numeric({ precision: 6, scale: 4 }).notNull(),
+  basis: varchar({ length: 50 }).notNull().default('manual'), // manual | api_usage_share | service_count | equal
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_attr_weights_platform').on(t.platformId),
+])
+
 // --- Credit Balances ---
 // Prepaid credit balance per platform (Anthropic, Railway, etc.).
 // Replaces .data/credit-balances.json which was wiped on every Render deploy.

@@ -2,6 +2,7 @@ import { and, eq, gte, lte, isNull, sql } from 'drizzle-orm'
 import { costRecords, platforms, services, budgets, projects as projectsTable } from '../../db/schema'
 import { getCurrentMonthRange, getMonthProgress } from '../../collectors/base'
 import { EUR_USD_RATE, toEur } from '../../utils/currency'
+import { loadAllAttributionWeights, splitCostByWeights, splitCostByServiceCount } from '../../utils/attribution'
 
 interface ServiceBreakdown {
   serviceId: number
@@ -125,6 +126,18 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Build set of platforms that have Unallocated actual records this month.
+  // For those platforms, estimate-only service rows (mtd=0) must NOT add their
+  // estimate into the total — the Unallocated record already represents the
+  // actual spend, so stacking estimates on top is double-counting.
+  // Fixes the Claude Max $935 = $467 unallocated + $196 estimate + $272 estimate bug.
+  const platformsWithUnallocated = new Set<number>()
+  for (const a of actuals) {
+    if (a.serviceId === null && parseFloat(a.total || '0') > 0) {
+      platformsWithUnallocated.add(a.platformId)
+    }
+  }
+
   // Build service breakdowns
   const allSvcBreakdowns: ServiceBreakdown[] = []
 
@@ -134,9 +147,14 @@ export default defineEventHandler(async (event) => {
     const mtd = actual?.total ?? 0
     const isFixed = actual?.costType === 'subscription' || actual?.costType === 'one_time'
       || svc.serviceType === 'subscription'
+    const hasUnallocatedActual = platformsWithUnallocated.has(svc.platformId)
     const eom = mtd > 0
       ? (isFixed ? mtd : (progress > 0 ? mtd / progress : mtd))
-      : estimate
+      : (hasUnallocatedActual ? 0 : estimate)
+
+    // If this service has no actuals but the platform has an Unallocated actual,
+    // the estimate is already captured elsewhere — hide it from totals.
+    const displayEstimate = mtd > 0 || !hasUnallocatedActual ? estimate : 0
 
     allSvcBreakdowns.push({
       serviceId: svc.id,
@@ -146,8 +164,8 @@ export default defineEventHandler(async (event) => {
       platformSlug: svc.platformSlug,
       platformType: svc.platformType,
       serviceType: svc.serviceType,
-      estimateUsd: estimate,
-      estimateEur: toEur(estimate),
+      estimateUsd: displayEstimate,
+      estimateEur: toEur(displayEstimate),
       actualMtdUsd: Math.round(mtd * 100) / 100,
       actualMtdEur: toEur(mtd),
       eomUsd: Math.round(eom * 100) / 100,
@@ -155,21 +173,72 @@ export default defineEventHandler(async (event) => {
       costType: actual?.costType ?? 'usage',
       collectionMethod: actual?.method ?? 'manual',
       recordCount: actual?.count ?? 0,
-      variance: estimate > 0 ? Math.round((eom - estimate) * 100) / 100 : 0,
+      variance: displayEstimate > 0 ? Math.round((eom - displayEstimate) * 100) / 100 : 0,
     })
   }
 
-  // Platform-level costs without service assignment — create synthetic "Unallocated" rows
+  // Attribution weights: platformId → (projectSlug → weight)
+  // When a platform has weights and produces an Unallocated row, we split that
+  // row across projects instead of leaving it as a catch-all. Source for weights:
+  // utils/attribution.ts refreshClaudeMaxWeights (run nightly from collect.ts).
+  const weightsByPlatform = await loadAllAttributionWeights(db)
+
+  // Platform-level costs without service assignment.
+  // If the platform has attribution weights, explode into per-project rows.
+  // If not, fall back to a single synthetic "Unallocated" row.
   for (const a of actuals) {
-    if (a.serviceId === null) {
-      const total = parseFloat(a.total || '0')
-      if (total <= 0) continue
-      const platformInfo = allServices.find(s => s.platformId === a.platformId)
-      if (!platformInfo) continue
-      const isFixed = a.costType === 'subscription' || a.costType === 'one_time'
-      const eom = isFixed ? total : (progress > 0 ? total / progress : total)
+    if (a.serviceId !== null) continue
+    const total = parseFloat(a.total || '0')
+    if (total <= 0) continue
+    const platformInfo = allServices.find(s => s.platformId === a.platformId)
+    if (!platformInfo) continue
+    const isFixed = a.costType === 'subscription' || a.costType === 'one_time'
+    const eomTotal = isFixed ? total : (progress > 0 ? total / progress : total)
+
+    const weights = weightsByPlatform.get(a.platformId)
+    let splits: Array<{ projectSlug: string; amount: number }> = []
+
+    if (weights && weights.size > 0) {
+      splits = splitCostByWeights(total, weights)
+    }
+    else if (platformInfo.platformSlug === 'render' && isFixed) {
+      // Render Professional subscription: split by active service count per project
+      const renderServices = allServices
+        .filter(s => s.platformId === a.platformId)
+        .map(s => ({ project: s.project }))
+      splits = splitCostByServiceCount(total, renderServices)
+    }
+
+    if (splits.length > 0) {
+      const sumSplit = splits.reduce((s, x) => s + x.amount, 0)
+      const eomRatio = sumSplit > 0 ? eomTotal / sumSplit : 1
+      for (const s of splits) {
+        const eom = s.amount * eomRatio
+        allSvcBreakdowns.push({
+          serviceId: -(a.platformId * 1000 + allSvcBreakdowns.length),
+          name: `${platformInfo.platformName} (attributed)`,
+          project: s.projectSlug,
+          platformName: platformInfo.platformName,
+          platformSlug: platformInfo.platformSlug,
+          platformType: platformInfo.platformType,
+          serviceType: a.costType || 'usage',
+          estimateUsd: 0,
+          estimateEur: 0,
+          actualMtdUsd: Math.round(s.amount * 100) / 100,
+          actualMtdEur: toEur(s.amount),
+          eomUsd: Math.round(eom * 100) / 100,
+          eomEur: toEur(eom),
+          costType: a.costType ?? 'usage',
+          collectionMethod: a.collectionMethod ?? 'manual',
+          recordCount: a.count,
+          variance: 0,
+        })
+      }
+    }
+    else {
+      // No attribution data — keep as Unallocated (surfaces the gap to the user)
       allSvcBreakdowns.push({
-        serviceId: -a.platformId, // negative ID for synthetic rows
+        serviceId: -a.platformId,
         name: 'Unallocated',
         project: null,
         platformName: platformInfo.platformName,
@@ -180,8 +249,8 @@ export default defineEventHandler(async (event) => {
         estimateEur: 0,
         actualMtdUsd: Math.round(total * 100) / 100,
         actualMtdEur: toEur(total),
-        eomUsd: Math.round(eom * 100) / 100,
-        eomEur: toEur(eom),
+        eomUsd: Math.round(eomTotal * 100) / 100,
+        eomEur: toEur(eomTotal),
         costType: a.costType ?? 'usage',
         collectionMethod: a.collectionMethod ?? 'manual',
         recordCount: a.count,

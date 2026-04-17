@@ -16,6 +16,8 @@ import { checkDepletionAlerts } from '../services/depletion-alerts'
 import { checkCollectorRegressions } from '../services/collector-regression-alerts'
 import { detectDrift, persistDriftAlerts } from '../services/drift-detector'
 import { detectAnomalies, persistAnomalyAlerts } from '../services/anomaly-detector'
+import { refreshClaudeMaxWeights } from '../utils/attribution'
+import { checkUnallocatedAlert } from '../services/unallocated-alerts'
 
 export default defineTask({
   meta: {
@@ -58,10 +60,18 @@ export default defineTask({
           if (!config.railwayApiToken) continue
           collector = createRailwayCollector(config.railwayApiToken, platform.id, apiServiceId)
           break
-        case 'anthropic':
+        case 'anthropic': {
           if (!config.anthropicAdminApiKey) continue
-          collector = createAnthropicCollector(config.anthropicAdminApiKey, platform.id, apiServiceId)
+          // Build workspace_id → serviceId map from services.externalId.
+          // Each per-project workspace service row has externalId set to the
+          // Anthropic workspace_id; collector uses this to attribute costs directly.
+          const wsMap = new Map<string, number>()
+          for (const svc of platformServices) {
+            if (svc.externalId) wsMap.set(svc.externalId, svc.id)
+          }
+          collector = createAnthropicCollector(config.anthropicAdminApiKey, platform.id, apiServiceId, wsMap)
           break
+        }
         case 'resend':
           if (!config.resendApiKey) continue
           collector = createResendCollector(config.resendApiKey, platform.id, apiServiceId)
@@ -164,6 +174,19 @@ export default defineTask({
       console.error('[collect] Plan limit alerts check failed:', limitAlertsError)
     }
 
+    // Refresh Claude Max attribution weights from Anthropic workspace usage share.
+    // Runs after collection so it sees the latest per-workspace cost records.
+    let attributionBasis: string | null = null
+    let attributionError: string | null = null
+    try {
+      const { basis } = await refreshClaudeMaxWeights(db)
+      attributionBasis = basis
+    }
+    catch (err) {
+      attributionError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Attribution weights refresh failed:', attributionError)
+    }
+
     // Depletion alerts — catches prepaid credit running low (Anthropic, Railway)
     let depletionAlerts: Awaited<ReturnType<typeof checkDepletionAlerts>> = []
     let depletionAlertsError: string | null = null
@@ -184,6 +207,17 @@ export default defineTask({
     catch (err) {
       regressionError = err instanceof Error ? err.message : String(err)
       console.error('[collect] Collector regression check failed:', regressionError)
+    }
+
+    // Unallocated-costs-high alert — fires when a big share of MTD can't be attributed
+    let unallocatedAlert: Awaited<ReturnType<typeof checkUnallocatedAlert>> | null = null
+    let unallocatedError: string | null = null
+    try {
+      unallocatedAlert = await checkUnallocatedAlert(db, config as unknown as Record<string, string>)
+    }
+    catch (err) {
+      unallocatedError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Unallocated alert check failed:', unallocatedError)
     }
 
     // Run drift detection + persist alerts
@@ -217,10 +251,12 @@ export default defineTask({
       limitAlerts,
       depletionAlerts,
       regressionAlerts,
+      attributionBasis,
+      unallocatedAlert,
       drifts,
       driftAlertCount,
       anomalies,
-      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, driftError, anomalyError },
+      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, driftError, anomalyError },
     }
   },
 })

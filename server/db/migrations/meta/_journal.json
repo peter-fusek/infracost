@@ -36,6 +36,13 @@
       "when": 1776407440515,
       "tag": "0004_add_credit_balances",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776408561511,
+      "tag": "0005_add_cost_attribution_weights",
+      "breakpoints": true
     }
   ]
 }
