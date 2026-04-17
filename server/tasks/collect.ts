@@ -18,6 +18,7 @@ import { detectDrift, persistDriftAlerts } from '../services/drift-detector'
 import { detectAnomalies, persistAnomalyAlerts } from '../services/anomaly-detector'
 import { refreshClaudeMaxWeights } from '../utils/attribution'
 import { checkUnallocatedAlert } from '../services/unallocated-alerts'
+import { checkVerificationAlerts } from '../services/verification-alerts'
 
 export default defineTask({
   meta: {
@@ -220,6 +221,17 @@ export default defineTask({
       console.error('[collect] Unallocated alert check failed:', unallocatedError)
     }
 
+    // Verification alerts — mismatch between infracost and platform UI, or stale checks
+    let verificationAlerts: Awaited<ReturnType<typeof checkVerificationAlerts>> = []
+    let verificationError: string | null = null
+    try {
+      verificationAlerts = await checkVerificationAlerts(db, config as unknown as Record<string, string>)
+    }
+    catch (err) {
+      verificationError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Verification alerts check failed:', verificationError)
+    }
+
     // Run drift detection + persist alerts
     let drifts: Awaited<ReturnType<typeof detectDrift>> = []
     let driftAlertCount = 0
@@ -253,10 +265,11 @@ export default defineTask({
       regressionAlerts,
       attributionBasis,
       unallocatedAlert,
+      verificationAlerts,
       drifts,
       driftAlertCount,
       anomalies,
-      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, driftError, anomalyError },
+      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, attributionError, unallocatedError, verificationError, driftError, anomalyError },
     }
   },
 })

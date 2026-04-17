@@ -43,6 +43,13 @@
       "when": 1776408561511,
       "tag": "0005_add_cost_attribution_weights",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776410970648,
+      "tag": "0006_add_verifications",
+      "breakpoints": true
     }
   ]
 }

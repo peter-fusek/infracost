@@ -11,6 +11,7 @@ export const optimizationStatusEnum = pgEnum('optimization_status', ['suggested'
 export const effortEnum = pgEnum('effort', ['trivial', 'small', 'medium', 'large'])
 export const actorTypeEnum = pgEnum('actor_type', ['system', 'user', 'ai'])
 export const collectionRunStatusEnum = pgEnum('collection_run_status', ['running', 'success', 'partial', 'failed'])
+export const verificationMethodEnum = pgEnum('verification_method', ['manual', 'browser', 'cli', 'api'])
 
 // --- Projects ---
 
@@ -190,6 +191,30 @@ export const costAttributionWeights = pgTable('cost_attribution_weights', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_attr_weights_platform').on(t.platformId),
+])
+
+// --- Verifications ---
+// Durable record of a user-visible cross-check: did the platform's own billing page
+// agree with what infracost's MTD total said? Powered by three paths — manual entry,
+// local browser automation (Claude-in-Chrome), CLI wrappers. See issue #90.
+
+export const verifications = pgTable('verifications', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  platformId: integer('platform_id').notNull().references(() => platforms.id),
+  periodStart: timestamp('period_start').notNull(),
+  periodEnd: timestamp('period_end').notNull(),
+  reportedUsd: numeric('reported_usd', { precision: 10, scale: 4 }).notNull(),
+  verifiedUsd: numeric('verified_usd', { precision: 10, scale: 4 }).notNull(),
+  delta: numeric({ precision: 10, scale: 4 }).notNull(),
+  deltaPct: numeric('delta_pct', { precision: 8, scale: 4 }),
+  method: verificationMethodEnum().notNull().default('manual'),
+  notes: jsonb().$type<{ raw?: string; screenshotBase64?: string; url?: string; extractedText?: string }>(),
+  verifiedAt: timestamp('verified_at').defaultNow().notNull(),
+  verifiedBy: varchar('verified_by', { length: 100 }).notNull().default('peter'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_verifications_platform_period').on(t.platformId, t.periodStart),
 ])
 
 // --- Credit Balances ---
