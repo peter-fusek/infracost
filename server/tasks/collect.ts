@@ -12,6 +12,8 @@ import { createTursoCollector } from '../collectors/turso'
 import { createUptimeRobotCollector } from '../collectors/uptimerobot'
 import { checkBudgetAlerts } from '../services/budget-alerts'
 import { checkPlanLimitAlerts } from '../services/plan-limit-alerts'
+import { checkDepletionAlerts } from '../services/depletion-alerts'
+import { checkCollectorRegressions } from '../services/collector-regression-alerts'
 import { detectDrift, persistDriftAlerts } from '../services/drift-detector'
 import { detectAnomalies, persistAnomalyAlerts } from '../services/anomaly-detector'
 
@@ -111,10 +113,20 @@ export default defineTask({
           await db.insert(costRecords).values(result.records)
         }
 
+        // A run that produced 0 records AND has errors is a hard failure,
+        // not a partial success — don't let it look yellow on the dashboard.
+        const hadErrors = result.errors.length > 0
+        const hadRecords = result.records.length > 0
+        const runStatus = hadErrors && !hadRecords
+          ? 'failed'
+          : hadErrors
+            ? 'partial'
+            : 'success'
+
         await db.update(collectionRuns).set({
-          status: result.errors.length > 0 ? 'partial' : 'success',
+          status: runStatus,
           recordsCollected: result.records.length,
-          errorMessage: result.errors.length > 0 ? result.errors.join('; ') : null,
+          errorMessage: hadErrors ? result.errors.join('; ') : null,
           completedAt: new Date(),
         }).where(eq(collectionRuns.id, run.id))
 
@@ -152,6 +164,28 @@ export default defineTask({
       console.error('[collect] Plan limit alerts check failed:', limitAlertsError)
     }
 
+    // Depletion alerts — catches prepaid credit running low (Anthropic, Railway)
+    let depletionAlerts: Awaited<ReturnType<typeof checkDepletionAlerts>> = []
+    let depletionAlertsError: string | null = null
+    try {
+      depletionAlerts = await checkDepletionAlerts(db, config as unknown as Record<string, string>)
+    }
+    catch (err) {
+      depletionAlertsError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Depletion alerts check failed:', depletionAlertsError)
+    }
+
+    // Collector regression — catches silently broken collectors (API contract changes)
+    let regressionAlerts: Awaited<ReturnType<typeof checkCollectorRegressions>> = []
+    let regressionError: string | null = null
+    try {
+      regressionAlerts = await checkCollectorRegressions(db, config as unknown as Record<string, string>)
+    }
+    catch (err) {
+      regressionError = err instanceof Error ? err.message : String(err)
+      console.error('[collect] Collector regression check failed:', regressionError)
+    }
+
     // Run drift detection + persist alerts
     let drifts: Awaited<ReturnType<typeof detectDrift>> = []
     let driftAlertCount = 0
@@ -177,6 +211,16 @@ export default defineTask({
       console.error('[collect] Anomaly detection failed:', anomalyError)
     }
 
-    return { result: results, alerts: newAlerts, limitAlerts, drifts, driftAlertCount, anomalies, errors: { alertsError, limitAlertsError, driftError, anomalyError } }
+    return {
+      result: results,
+      alerts: newAlerts,
+      limitAlerts,
+      depletionAlerts,
+      regressionAlerts,
+      drifts,
+      driftAlertCount,
+      anomalies,
+      errors: { alertsError, limitAlertsError, depletionAlertsError, regressionError, driftError, anomalyError },
+    }
   },
 })

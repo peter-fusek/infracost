@@ -7,30 +7,53 @@ import type { BaseCollector, CollectorResult, CostRecord } from './base'
  * Endpoint: GET /v1/organizations/cost_report
  * Requires an Admin API key (sk-ant-admin-...).
  *
- * Falls back gracefully if the endpoint is unavailable.
+ * API contract (verified against docs 2026-04-17):
+ * - `starting_at` / `ending_at` as RFC 3339 UTC timestamps (NOT YYYY-MM-DD)
+ * - `group_by[]` accepts `workspace_id` and `description` (NOT `workspace`)
+ * - Response: `{ data: [{ results: [{ amount: cents-string, currency, ... }] }], has_more, next_page }`
+ * - Prepaid credit balance is NOT exposed by any Admin API endpoint — must be tracked manually
  */
 
-interface CostReportItem {
-  workspace_id: string
-  workspace_name: string
-  description: string
-  cost_cents: string // e.g. "12345" = $123.45
+interface CostResultItem {
+  amount: string // string cents, e.g. "12345" = $123.45
+  currency: string
+  cost_type?: string
+  description?: string
+  model?: string
+  service_tier?: string
+  token_type?: string
+  context_window?: string
+  workspace_id?: string | null
+}
+
+interface CostBucket {
+  starting_at: string
+  ending_at: string
+  results: CostResultItem[]
 }
 
 interface CostReportResponse {
-  data: CostReportItem[]
+  data: CostBucket[]
+  has_more: boolean
+  next_page: string | null
 }
 
 interface UsageReportBucket {
-  date: string
-  input_tokens: number
-  output_tokens: number
-  cache_creation_input_tokens: number
-  cache_read_input_tokens: number
+  starting_at: string
+  ending_at: string
+  results: Array<{
+    uncached_input_tokens?: number
+    cache_creation_input_tokens?: number
+    cache_read_input_tokens?: number
+    output_tokens?: number
+    server_tool_use?: Record<string, number>
+  }>
 }
 
 interface UsageReportResponse {
   data: UsageReportBucket[]
+  has_more: boolean
+  next_page: string | null
 }
 
 export function createAnthropicCollector(apiKey: string, platformId: number, serviceId?: number): BaseCollector {
@@ -42,111 +65,83 @@ export function createAnthropicCollector(apiKey: string, platformId: number, ser
       const errors: string[] = []
       let accountIdentifier: string | undefined
 
-      // Format dates as YYYY-MM-DD for the API
-      const startDate = periodStart.toISOString().slice(0, 10)
-      const endDate = periodEnd.toISOString().slice(0, 10)
+      const startingAt = toRfc3339(periodStart)
+      const endingAt = toRfc3339(periodEnd)
 
-      // Try cost_report endpoint first (gives USD amounts directly)
+      const headers = {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      }
+
       try {
-        const costUrl = `https://api.anthropic.com/v1/organizations/cost_report?start_date=${startDate}&end_date=${endDate}&group_by[]=workspace`
-        const costResponse = await fetch(costUrl, {
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          signal: AbortSignal.timeout(15_000),
-        })
+        const buckets = await fetchAllPages<CostBucket>(
+          'https://api.anthropic.com/v1/organizations/cost_report',
+          { starting_at: startingAt, ending_at: endingAt, 'group_by[]': 'workspace_id' },
+          headers,
+          errors,
+        )
 
-        if (costResponse.ok) {
-          const costData = await costResponse.json() as CostReportResponse
-
-          if (costData.data?.length) {
-            // Sum all workspace costs
-            let totalCents = 0
-            const workspaces: string[] = []
-
-            for (const item of costData.data) {
-              totalCents += parseFloat(item.cost_cents || '0')
-              if (item.workspace_name && !workspaces.includes(item.workspace_name)) {
-                workspaces.push(item.workspace_name)
-              }
-            }
-
-            const totalUsd = totalCents / 100
-
-            if (totalUsd > 0) {
-              records.push({
-                platformId,
-                serviceId,
-                recordDate: new Date(),
-                periodStart,
-                periodEnd,
-                amount: totalUsd.toFixed(4),
-                currency: 'USD',
-                costType: 'usage',
-                collectionMethod: 'api',
-                rawData: {
-                  source: 'cost_report',
-                  workspaces: costData.data,
-                  totalCents,
-                },
-              })
-            }
-
-            accountIdentifier = workspaces.length
-              ? workspaces.join(', ')
-              : undefined
-          }
-
-          // Also fetch usage details for metadata
-          try {
-            const usageUrl = `https://api.anthropic.com/v1/organizations/usage_report/messages?start_date=${startDate}&end_date=${endDate}&bucket_width=1d`
-            const usageResponse = await fetch(usageUrl, {
-              headers: {
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-              },
-              signal: AbortSignal.timeout(15_000),
-            })
-
-            if (usageResponse.ok) {
-              const usageData = await usageResponse.json() as UsageReportResponse
-              if (usageData.data?.length && records.length > 0) {
-                // Attach token totals to the cost record's rawData
-                const totalInput = usageData.data.reduce((s, b) => s + b.input_tokens, 0)
-                const totalOutput = usageData.data.reduce((s, b) => s + b.output_tokens, 0)
-                const totalCacheRead = usageData.data.reduce((s, b) => s + (b.cache_read_input_tokens || 0), 0)
-                const totalCacheWrite = usageData.data.reduce((s, b) => s + (b.cache_creation_input_tokens || 0), 0)
-
-                const rawData = records[0]!.rawData as Record<string, unknown>
-                rawData.tokens = {
-                  input: totalInput,
-                  output: totalOutput,
-                  cacheRead: totalCacheRead,
-                  cacheWrite: totalCacheWrite,
-                  total: totalInput + totalOutput,
-                }
-              }
-            }
-          }
-          catch (err) {
-            errors.push(`Anthropic usage report failed: ${err instanceof Error ? err.message : String(err)}`)
-          }
-
+        if (buckets === null) {
+          // fetch-level failure already pushed to errors — bail out cleanly
           return { records, errors, accountIdentifier }
         }
 
-        // Handle specific error codes
-        const status = costResponse.status
-        if (status === 404) {
-          errors.push('Anthropic Admin API: cost_report endpoint not found. May need newer API version.')
+        let totalCents = 0
+        const workspaceIds = new Set<string>()
+        for (const bucket of buckets) {
+          for (const item of bucket.results) {
+            totalCents += parseFloat(item.amount || '0')
+            if (item.workspace_id) workspaceIds.add(item.workspace_id)
+          }
         }
-        else if (status === 401 || status === 403) {
-          errors.push(`Anthropic Admin API: auth failed (${status}). Ensure ANTHROPIC_ADMIN_API_KEY is an Admin key (sk-ant-admin-...).`)
+        const totalUsd = totalCents / 100
+
+        // Always push a record — even $0 — so the run is "success" not "partial with 0 records"
+        // and stale data gets cleared by the delete-before-insert dedup in collect.ts.
+        records.push({
+          platformId,
+          serviceId,
+          recordDate: new Date(),
+          periodStart,
+          periodEnd,
+          amount: totalUsd.toFixed(4),
+          currency: 'USD',
+          costType: 'usage',
+          collectionMethod: 'api',
+          rawData: {
+            source: 'cost_report',
+            buckets,
+            totalCents,
+            workspaceIds: [...workspaceIds],
+          },
+        })
+
+        accountIdentifier = workspaceIds.size > 0 ? [...workspaceIds].join(', ') : undefined
+
+        // Enrich with token counts from usage_report (optional — don't fail the record if this fails)
+        try {
+          const usageBuckets = await fetchAllPages<UsageReportBucket>(
+            'https://api.anthropic.com/v1/organizations/usage_report/messages',
+            { starting_at: startingAt, ending_at: endingAt, bucket_width: '1d' },
+            headers,
+            errors,
+          )
+          if (usageBuckets && usageBuckets.length > 0) {
+            let input = 0, output = 0, cacheRead = 0, cacheWrite = 0
+            for (const b of usageBuckets) {
+              for (const r of b.results) {
+                input += (r.uncached_input_tokens ?? 0)
+                output += (r.output_tokens ?? 0)
+                cacheRead += (r.cache_read_input_tokens ?? 0)
+                cacheWrite += (r.cache_creation_input_tokens ?? 0)
+              }
+            }
+            const rawData = records[0]!.rawData as Record<string, unknown>
+            rawData.tokens = { input, output, cacheRead, cacheWrite, total: input + output }
+          }
         }
-        else {
-          const body = await costResponse.text().catch(() => '')
-          errors.push(`Anthropic Admin API error ${status}: ${body.slice(0, 200)}`)
+        catch (err) {
+          errors.push(`Anthropic usage report failed: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
       catch (err) {
@@ -156,4 +151,56 @@ export function createAnthropicCollector(apiKey: string, platformId: number, ser
       return { records, errors, accountIdentifier }
     },
   }
+}
+
+function toRfc3339(d: Date): string {
+  // Anthropic requires minute/hour/day-aligned UTC — we use day alignment (00:00:00Z)
+  const iso = d.toISOString()
+  return iso.slice(0, 10) + 'T00:00:00Z'
+}
+
+async function fetchAllPages<T>(
+  baseUrl: string,
+  params: Record<string, string>,
+  headers: Record<string, string>,
+  errors: string[],
+): Promise<T[] | null> {
+  const all: T[] = []
+  let pageToken: string | null = null
+  let pages = 0
+  const MAX_PAGES = 30
+
+  do {
+    const qs = new URLSearchParams(params)
+    if (pageToken) qs.set('page', pageToken)
+    const url = `${baseUrl}?${qs.toString()}`
+
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(15_000) })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      if (res.status === 401 || res.status === 403) {
+        errors.push(`Anthropic Admin API: auth failed (${res.status}). Ensure ANTHROPIC_ADMIN_API_KEY is an Admin key (sk-ant-admin-...).`)
+      }
+      else if (res.status === 404) {
+        errors.push(`Anthropic Admin API: endpoint not found (${res.status}). May need newer anthropic-version header.`)
+      }
+      else {
+        errors.push(`Anthropic Admin API error ${res.status}: ${body.slice(0, 200)}`)
+      }
+      return null
+    }
+
+    const json = await res.json() as { data: T[]; has_more: boolean; next_page: string | null }
+    if (Array.isArray(json.data)) all.push(...json.data)
+    pageToken = json.has_more ? json.next_page : null
+    pages++
+  }
+  while (pageToken && pages < MAX_PAGES)
+
+  if (pageToken) {
+    errors.push(`Anthropic Admin API: pagination cap hit (${MAX_PAGES} pages) — data may be truncated.`)
+  }
+
+  return all
 }

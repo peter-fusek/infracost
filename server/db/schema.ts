@@ -175,6 +175,18 @@ export const auditLog = pgTable('audit_log', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// --- Credit Balances ---
+// Prepaid credit balance per platform (Anthropic, Railway, etc.).
+// Replaces .data/credit-balances.json which was wiped on every Render deploy.
+
+export const creditBalances = pgTable('credit_balances', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  platform: varchar({ length: 50 }).notNull().unique(),
+  balance: numeric({ precision: 10, scale: 4 }).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // --- Collection Runs ---
 
 export const collectionRuns = pgTable('collection_runs', {
