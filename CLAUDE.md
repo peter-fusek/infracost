@@ -45,6 +45,13 @@ Before filing an issue in a non-infracost repo that proposes API/SDK/library cha
   - Drift results persisted as alerts (alertType: drift_*) with 24h dedup + audit_log for history
   - GET /api/drift returns live drift check results
   - GET /api/projects/[slug]/changes returns change history timeline from audit_log
+- Source Reconciliation: server/services/source-reconciler.ts — generic SourceAdapter framework (#94)
+  - GA4 + GSC adapters in server/services/source-adapters/ diff ANALYTICS_CONFIG against live upstream (Admin API + sites.list)
+  - Drift persisted as alerts (alertType: source_drift_<adapter>_<kind>_<slug>) with 7d dedup + audit_log (entityType: source_config)
+  - fatal: auth/setup failure → suppress persistence to avoid false-positive storm
+  - Daily cron 05:30 UTC (before 06:00 collect) — server/tasks/source-drift.ts
+  - GET /api/source-drift runs both adapters and returns per-adapter summary
+  - Invariant (tests/analytics-config-invariants.test.ts): no duplicate ga4PropertyId / gscSiteUrl without SHARED_GA4_PROPERTIES allow-list entry — prevents silent-dedup bugs (#93)
 - Free Tier Expiry: server/utils/free-tier-expiry.ts — tracks known expiration dates for free services
   - GET /api/expiry returns expiry statuses with risk levels
 - Analytics: server/services/analytics-ga4.ts + analytics-gsc.ts — GA4 traffic + GSC search performance per project
@@ -149,3 +156,5 @@ Before filing an issue in a non-infracost repo that proposes API/SDK/library cha
 - Error handling convention: all catch blocks must log error details (err.message), never empty catch. Enforced in hardening audit 2026-04-09
 - Security headers: HSTS (1yr), upgrade-insecure-requests, X-Frame-Options DENY, CSP with frame-ancestors 'none'
 - CVE overrides in package.json: defu, lodash, vite — check periodically if upstream fixed
+- GSC sites.list returns trailing-slash canonical form (`https://x/`) — source-reconciler's `normaliseGscUrl` strips it; sc-domain entries untouched
+- Anything calling Google Analytics Admin API needs `analyticsadmin.googleapis.com` enabled on the GCP project the service account lives in — see #97
