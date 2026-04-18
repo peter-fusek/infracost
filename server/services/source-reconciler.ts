@@ -1,6 +1,10 @@
 import { gte } from 'drizzle-orm'
 import { alerts, auditLog } from '../db/schema'
 
+/** Shared prefix used by source-reconciler alertTypes.
+ *  Also parsed by triage-normaliser.ts — keep in sync. */
+export const SOURCE_DRIFT_PREFIX = 'source_drift_'
+
 /**
  * Source reconciliation framework (#94 Phase 1).
  *
@@ -52,7 +56,7 @@ export interface ReconciliationSummary {
 }
 
 export function buildAlertType(adapterName: string, drift: SourceDrift): string {
-  const base = `source_drift_${adapterName}_${drift.kind}_${drift.slug}`
+  const base = `${SOURCE_DRIFT_PREFIX}${adapterName}_${drift.kind}_${drift.slug}`
   return base.length > ALERT_TYPE_MAX ? base.slice(0, ALERT_TYPE_MAX) : base
 }
 
@@ -101,6 +105,9 @@ export async function runReconciliation(db: DB, adapterList: SourceAdapter[]): P
     summary.byAdapter[adapter.name]!.total = result.drifts.length
     summary.total += result.drifts.length
 
+    const alertRows: typeof alerts.$inferInsert[] = []
+    const auditRows: typeof auditLog.$inferInsert[] = []
+
     for (const drift of result.drifts) {
       const alertType = buildAlertType(adapter.name, drift)
       if (recentTypes.has(alertType)) {
@@ -112,13 +119,9 @@ export async function runReconciliation(db: DB, adapterList: SourceAdapter[]): P
       const upstreamSuffix = drift.upstreamId ? ` (${drift.upstreamId})` : ''
       const message = `[${adapter.displayName}] ${drift.kind}: ${drift.slug}${upstreamSuffix} — ${drift.details}`
 
-      await db.insert(alerts).values({
-        severity: 'warning',
-        alertType,
-        message,
-      })
-      await db.insert(auditLog).values({
-        action: `source_drift_${drift.kind}`,
+      alertRows.push({ severity: 'warning', alertType, message })
+      auditRows.push({
+        action: `${SOURCE_DRIFT_PREFIX}${drift.kind}`,
         entityType: 'source_config',
         actorType: 'system',
         details: {
@@ -129,10 +132,13 @@ export async function runReconciliation(db: DB, adapterList: SourceAdapter[]): P
           details: drift.details,
         },
       })
-      recentTypes.add(alertType) // in case the same adapter emits duplicate events in one run
+      recentTypes.add(alertType) // prevent duplicate inserts within this run
       summary.persisted++
       summary.byAdapter[adapter.name]!.persisted++
     }
+
+    if (alertRows.length > 0) await db.insert(alerts).values(alertRows)
+    if (auditRows.length > 0) await db.insert(auditLog).values(auditRows)
   }
 
   return summary

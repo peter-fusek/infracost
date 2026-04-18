@@ -1,6 +1,7 @@
 import type { AdapterResult, SourceAdapter, SourceDrift } from '../source-reconciler'
 import { ANALYTICS_CONFIG } from '../../utils/analytics-config'
 import { getAccessToken } from '../../utils/google-auth'
+import { fetchWithRetry } from '../../utils/retry'
 
 /**
  * GA4 source adapter.
@@ -55,10 +56,10 @@ export async function fetchLiveGA4Properties(): Promise<{ properties: UpstreamPr
     url.searchParams.set('pageSize', '200')
     if (pageToken) url.searchParams.set('pageToken', pageToken)
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchWithRetry(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(15_000),
-    })
+    }, { label: 'ga4-admin/accountSummaries' })
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')

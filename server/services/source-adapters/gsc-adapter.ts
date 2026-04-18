@@ -1,6 +1,7 @@
 import type { AdapterResult, SourceAdapter, SourceDrift } from '../source-reconciler'
 import { ANALYTICS_CONFIG } from '../../utils/analytics-config'
 import { getAccessToken } from '../../utils/google-auth'
+import { fetchWithRetry } from '../../utils/retry'
 
 /**
  * GSC source adapter.
@@ -36,10 +37,10 @@ export async function fetchLiveGSCSites(): Promise<{ sites: UpstreamGSCSite[]; f
     return { sites: [], fatal: 'No GCP service account configured (GCP_SERVICE_ACCOUNT_JSON missing)', errors: [] }
   }
 
-  const response = await fetch(GSC_API, {
+  const response = await fetchWithRetry(GSC_API, {
     headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(15_000),
-  })
+  }, { label: 'gsc/sites.list' })
 
   if (!response.ok) {
     const body = await response.text().catch(() => '')

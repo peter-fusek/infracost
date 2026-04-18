@@ -3,6 +3,8 @@
  * into a unified TriageItem[] for the /triage page and weekly digest.
  */
 
+import { SOURCE_DRIFT_PREFIX } from '../services/source-reconciler'
+
 export type TriageSource = 'alert' | 'expiry' | 'depletion' | 'limit' | 'reminder' | 'drift'
 
 export interface TriageItem {
@@ -56,12 +58,12 @@ export function normaliseAlert(alert: {
   if (alert.status === 'resolved') return null
   const urgency = alert.severity === 'critical' ? 2 : 3
 
-  // Source-reconciler alerts (#94) use alertType format `source_drift_<adapter>_<kind>_<slug>`.
+  // Source-reconciler alerts use alertType format `{SOURCE_DRIFT_PREFIX}<adapter>_<kind>_<slug>`.
   // Unpack so /triage can show the adapter (ga4/gsc) as platform instead of "source".
   let platform = alert.alertType.split('_')[0] ?? ''
   let subtitle = `${alert.alertType} alert`
-  if (alert.alertType.startsWith('source_drift_')) {
-    const parts = alert.alertType.slice('source_drift_'.length).split('_')
+  if (alert.alertType.startsWith(SOURCE_DRIFT_PREFIX)) {
+    const parts = alert.alertType.slice(SOURCE_DRIFT_PREFIX.length).split('_')
     platform = parts[0] ?? 'source'
     const kind = parts[1] ?? ''
     subtitle = `Source reconciliation: ${platform} ${kind}`.trim()
