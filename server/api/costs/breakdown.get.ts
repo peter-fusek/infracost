@@ -112,8 +112,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Build service-level actuals map
-  const actualMap = new Map<string, { total: number; count: number; costType: string; method: string }>()
+  // Build service-level actuals map.
+  // Rows from the GROUP BY above can share (platformId, serviceId) while differing
+  // on costType — e.g. a service that has both a subscription record and a usage
+  // record in the same month. `mixedCostType=true` flags that case so downstream
+  // doesn't treat the merged total as fixed when part of it is usage (would
+  // under-extrapolate the usage portion on EOM).
+  const actualMap = new Map<string, { total: number; count: number; costType: string; method: string; mixedCostType: boolean }>()
   for (const a of actuals) {
     const key = `${a.platformId}-${a.serviceId ?? 'platform'}`
     const existing = actualMap.get(key)
@@ -121,8 +126,9 @@ export default defineEventHandler(async (event) => {
     if (existing) {
       existing.total += total
       existing.count += a.count
+      if (existing.costType !== a.costType) existing.mixedCostType = true
     } else {
-      actualMap.set(key, { total, count: a.count, costType: a.costType, method: a.collectionMethod })
+      actualMap.set(key, { total, count: a.count, costType: a.costType, method: a.collectionMethod, mixedCostType: false })
     }
   }
 
@@ -145,8 +151,12 @@ export default defineEventHandler(async (event) => {
     const estimate = parseFloat(svc.monthlyCostEstimate || '0')
     const actual = actualMap.get(`${svc.platformId}-${svc.id}`)
     const mtd = actual?.total ?? 0
-    const isFixed = actual?.costType === 'subscription' || actual?.costType === 'one_time'
+    // Mixed costTypes in actualMap → fall back to extrapolation (conservative
+    // under-predict on the subscription portion beats over-predict on usage).
+    const isFixed = !actual?.mixedCostType && (
+      actual?.costType === 'subscription' || actual?.costType === 'one_time'
       || svc.serviceType === 'subscription'
+    )
     const hasUnallocatedActual = platformsWithUnallocated.has(svc.platformId)
     const eom = mtd > 0
       ? (isFixed ? mtd : (progress > 0 ? mtd / progress : mtd))

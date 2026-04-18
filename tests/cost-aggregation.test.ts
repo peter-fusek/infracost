@@ -13,6 +13,27 @@ function computeEomEstimate(fixedMtd: number, usageMtd: number, progress: number
   return fixedMtd + usageProjected
 }
 
+// Mirrors the actualMap merge in server/api/costs/breakdown.get.ts. Kept as a
+// pure function so the mixed-costType guard can be tested without a DB fixture.
+interface ActualRow { platformId: number; serviceId: number | null; total: string; count: number; costType: string; collectionMethod: string }
+function buildActualMap(actuals: ActualRow[]) {
+  const map = new Map<string, { total: number; count: number; costType: string; method: string; mixedCostType: boolean }>()
+  for (const a of actuals) {
+    const key = `${a.platformId}-${a.serviceId ?? 'platform'}`
+    const existing = map.get(key)
+    const total = parseFloat(a.total || '0')
+    if (existing) {
+      existing.total += total
+      existing.count += a.count
+      if (existing.costType !== a.costType) existing.mixedCostType = true
+    }
+    else {
+      map.set(key, { total, count: a.count, costType: a.costType, method: a.collectionMethod, mixedCostType: false })
+    }
+  }
+  return map
+}
+
 describe('toEur', () => {
   it('converts USD to EUR at current rate', () => {
     expect(toEur(100)).toBe(Math.round(100 * EUR_USD_RATE * 100) / 100)
@@ -88,5 +109,55 @@ describe('budget percentage', () => {
     const budgetLimit = 0
     const pct = budgetLimit > 0 ? Math.round((100 / budgetLimit) * 100) : 0
     expect(pct).toBe(0)
+  })
+})
+
+describe('buildActualMap — mixed costType guard (#89 follow-up)', () => {
+  it('merges same-costType records without flagging mixed', () => {
+    const map = buildActualMap([
+      { platformId: 1, serviceId: 10, total: '5.00', count: 1, costType: 'usage', collectionMethod: 'api' },
+      { platformId: 1, serviceId: 10, total: '3.00', count: 1, costType: 'usage', collectionMethod: 'api' },
+    ])
+    const entry = map.get('1-10')
+    expect(entry?.total).toBe(8)
+    expect(entry?.mixedCostType).toBe(false)
+  })
+
+  it('flags mixed when subscription + usage land on the same (platform, service) key', () => {
+    const map = buildActualMap([
+      { platformId: 1, serviceId: 10, total: '100.00', count: 1, costType: 'subscription', collectionMethod: 'api' },
+      { platformId: 1, serviceId: 10, total: '50.00', count: 1, costType: 'usage', collectionMethod: 'api' },
+    ])
+    const entry = map.get('1-10')
+    expect(entry?.total).toBe(150)
+    expect(entry?.mixedCostType).toBe(true)
+  })
+
+  it('keeps the first-seen costType on the merged entry (first-writer-wins for the label)', () => {
+    const map = buildActualMap([
+      { platformId: 1, serviceId: 10, total: '100.00', count: 1, costType: 'subscription', collectionMethod: 'api' },
+      { platformId: 1, serviceId: 10, total: '50.00', count: 1, costType: 'usage', collectionMethod: 'api' },
+    ])
+    // The label is not load-bearing once mixedCostType=true — isFixed falls back to false.
+    expect(map.get('1-10')?.costType).toBe('subscription')
+  })
+
+  it('downstream isFixed check should return false when mixed, regardless of base costType', () => {
+    const map = buildActualMap([
+      { platformId: 1, serviceId: 10, total: '100.00', count: 1, costType: 'subscription', collectionMethod: 'api' },
+      { platformId: 1, serviceId: 10, total: '50.00', count: 1, costType: 'usage', collectionMethod: 'api' },
+    ])
+    const actual = map.get('1-10')
+    const isFixed = !actual?.mixedCostType && (actual?.costType === 'subscription' || actual?.costType === 'one_time')
+    expect(isFixed).toBe(false) // prevents EOM under-predicting the usage component
+  })
+
+  it('still treats pure subscription as fixed (isFixed=true)', () => {
+    const map = buildActualMap([
+      { platformId: 1, serviceId: 10, total: '100.00', count: 1, costType: 'subscription', collectionMethod: 'api' },
+    ])
+    const actual = map.get('1-10')
+    const isFixed = !actual?.mixedCostType && (actual?.costType === 'subscription' || actual?.costType === 'one_time')
+    expect(isFixed).toBe(true)
   })
 })
