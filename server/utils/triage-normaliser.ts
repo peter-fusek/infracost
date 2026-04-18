@@ -55,15 +55,27 @@ export function normaliseAlert(alert: {
 }): TriageItem | null {
   if (alert.status === 'resolved') return null
   const urgency = alert.severity === 'critical' ? 2 : 3
+
+  // Source-reconciler alerts (#94) use alertType format `source_drift_<adapter>_<kind>_<slug>`.
+  // Unpack so /triage can show the adapter (ga4/gsc) as platform instead of "source".
+  let platform = alert.alertType.split('_')[0] ?? ''
+  let subtitle = `${alert.alertType} alert`
+  if (alert.alertType.startsWith('source_drift_')) {
+    const parts = alert.alertType.slice('source_drift_'.length).split('_')
+    platform = parts[0] ?? 'source'
+    const kind = parts[1] ?? ''
+    subtitle = `Source reconciliation: ${platform} ${kind}`.trim()
+  }
+
   return {
     id: `alert:${alert.id}`,
     source: 'alert',
     urgencyScore: urgency,
     severity: severityFromUrgency(urgency),
     title: alert.message,
-    subtitle: `${alert.alertType} alert`,
+    subtitle,
     detail: `Status: ${alert.status}`,
-    platform: alert.alertType.split('_')[0] ?? '',
+    platform,
     actionType: alert.status === 'pending' ? 'alert_ack' : 'alert_resolve',
     actionLabel: alert.status === 'pending' ? 'Acknowledge' : 'Resolve',
     alertId: alert.id,

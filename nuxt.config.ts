@@ -48,6 +48,9 @@ export default defineNuxtConfig({
       },
     },
     scheduledTasks: {
+      // Source reconciliation runs before collect so drift is surfaced
+      // independently of whether any collector errors out (#94).
+      '30 5 * * *': ['source-drift'],
       // Run cost collection daily at 06:00 UTC
       '0 6 * * *': ['collect'],
       // Weekly cost digest email — Mondays at 07:00 UTC
