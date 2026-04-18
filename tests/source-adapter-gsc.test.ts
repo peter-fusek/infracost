@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diffGSC } from '../server/services/source-adapters/gsc-adapter'
+import { diffGSC, normaliseGscUrl } from '../server/services/source-adapters/gsc-adapter'
 import type { UpstreamGSCSite } from '../server/services/source-adapters/gsc-adapter'
 
 const upstream = (siteUrl: string, permissionLevel = 'siteOwner'): UpstreamGSCSite => ({ siteUrl, permissionLevel })
@@ -44,5 +44,38 @@ describe('diffGSC', () => {
     ]
     const drifts = diffGSC(config, [])
     expect(drifts).toHaveLength(0)
+  })
+
+  it('treats URL-prefix entries with and without trailing slash as equal (real GSC quirk)', () => {
+    const config = [
+      { slug: 'infracost', ga4PropertyId: null, gscSiteUrl: 'https://infracost.eu' },
+    ]
+    const drifts = diffGSC(config, [upstream('https://infracost.eu/')])
+    expect(drifts).toHaveLength(0)
+  })
+
+  it('does not normalise sc-domain entries (bare domain differs from URL-prefix by design)', () => {
+    const config = [
+      { slug: 'homegrif.cz', ga4PropertyId: null, gscSiteUrl: 'sc-domain:homegrif.cz' },
+    ]
+    // sites.list returning a URL-prefix for the same domain is genuinely separate drift
+    const drifts = diffGSC(config, [upstream('https://www.homegrif.cz/')])
+    expect(drifts.filter(d => d.kind === 'missing')).toHaveLength(1)
+    expect(drifts.filter(d => d.kind === 'unknown')).toHaveLength(1)
+  })
+})
+
+describe('normaliseGscUrl', () => {
+  it('strips a trailing slash from URL-prefix entries', () => {
+    expect(normaliseGscUrl('https://infracost.eu/')).toBe('https://infracost.eu')
+    expect(normaliseGscUrl('https://infracost.eu')).toBe('https://infracost.eu')
+  })
+
+  it('strips multiple trailing slashes', () => {
+    expect(normaliseGscUrl('https://infracost.eu//')).toBe('https://infracost.eu')
+  })
+
+  it('leaves sc-domain entries untouched', () => {
+    expect(normaliseGscUrl('sc-domain:budgetco.eu')).toBe('sc-domain:budgetco.eu')
   })
 })

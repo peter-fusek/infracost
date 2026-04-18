@@ -64,20 +64,31 @@ export async function fetchLiveGSCSites(): Promise<{ sites: UpstreamGSCSite[]; f
   return { sites, fatal: null, errors }
 }
 
+/**
+ * Normalise a GSC site URL for equality comparison.
+ * GSC returns URL-prefix sites with a trailing slash (`https://infracost.eu/`)
+ * while config often omits it (`https://infracost.eu`). Treat them as equal.
+ * `sc-domain:` entries are left untouched.
+ */
+export function normaliseGscUrl(url: string): string {
+  if (url.startsWith('sc-domain:')) return url
+  return url.replace(/\/+$/, '')
+}
+
 export function diffGSC(
   config: typeof ANALYTICS_CONFIG,
   upstream: UpstreamGSCSite[],
 ): SourceDrift[] {
   const drifts: SourceDrift[] = []
-  const upstreamUrls = new Set(upstream.map(s => s.siteUrl))
-  const configUrls = new Set<string>()
+  const upstreamByNormalised = new Map(upstream.map(s => [normaliseGscUrl(s.siteUrl), s]))
+  const configNormalised = new Set<string>()
   for (const entry of config) {
-    if (entry.gscSiteUrl) configUrls.add(entry.gscSiteUrl)
+    if (entry.gscSiteUrl) configNormalised.add(normaliseGscUrl(entry.gscSiteUrl))
   }
 
   for (const entry of config) {
     if (!entry.gscSiteUrl) continue
-    if (!upstreamUrls.has(entry.gscSiteUrl)) {
+    if (!upstreamByNormalised.has(normaliseGscUrl(entry.gscSiteUrl))) {
       drifts.push({
         kind: 'missing',
         slug: entry.slug,
@@ -88,7 +99,7 @@ export function diffGSC(
   }
 
   for (const site of upstream) {
-    if (!configUrls.has(site.siteUrl)) {
+    if (!configNormalised.has(normaliseGscUrl(site.siteUrl))) {
       drifts.push({
         kind: 'unknown',
         slug: site.siteUrl,
