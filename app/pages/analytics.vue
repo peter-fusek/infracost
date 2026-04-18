@@ -25,6 +25,8 @@ interface ProjectAnalytics {
   productionUrl: string | null
   ga4PropertyId: string | null
   gscSiteUrl: string | null
+  sharedGa4With: string[]
+  sharedGscWith: string[]
   ga4: {
     sessions: number
     users: number
@@ -182,7 +184,7 @@ function toggleTips(slug: string) {
           <UCard class="overflow-hidden">
             <!-- Project header -->
             <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 flex-wrap">
                 <h2 class="font-display text-lg font-bold">{{ project.name }}</h2>
                 <a
                   v-if="project.productionUrl"
@@ -194,6 +196,26 @@ function toggleTips(slug: string) {
                   <UIcon name="i-lucide-external-link" class="size-3" />
                   {{ project.productionUrl.replace('https://', '') }}
                 </a>
+                <UBadge
+                  v-if="project.sharedGa4With?.length"
+                  color="warning"
+                  variant="subtle"
+                  size="xs"
+                  :title="`Same GA4 property (${project.ga4PropertyId}) as ${project.sharedGa4With.join(', ')} — numbers below are not traffic-isolated for this slug.`"
+                >
+                  <UIcon name="i-lucide-link-2" class="size-3 mr-0.5" />
+                  shares GA4 with {{ project.sharedGa4With.join(', ') }}
+                </UBadge>
+                <UBadge
+                  v-if="project.sharedGscWith?.length"
+                  color="warning"
+                  variant="subtle"
+                  size="xs"
+                  :title="`Same GSC site (${project.gscSiteUrl}) as ${project.sharedGscWith.join(', ')}.`"
+                >
+                  <UIcon name="i-lucide-link-2" class="size-3 mr-0.5" />
+                  shares GSC with {{ project.sharedGscWith.join(', ') }}
+                </UBadge>
               </div>
               <!-- SEO Score badge -->
               <div

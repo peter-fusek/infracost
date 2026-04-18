@@ -74,8 +74,31 @@ export default defineEventHandler(async () => {
 
   const all = [...results, ...analyticsOnly]
 
+  // Detect shared GA4 / GSC sources: two config entries pointing at the same property
+  // surface identical numbers and silently mask whether the second card has its own stream.
+  const ga4Groups = new Map<string, string[]>()
+  const gscGroups = new Map<string, string[]>()
+  for (const p of all) {
+    if (p.ga4PropertyId) {
+      const list = ga4Groups.get(p.ga4PropertyId) ?? []
+      list.push(p.slug)
+      ga4Groups.set(p.ga4PropertyId, list)
+    }
+    if (p.gscSiteUrl) {
+      const list = gscGroups.get(p.gscSiteUrl) ?? []
+      list.push(p.slug)
+      gscGroups.set(p.gscSiteUrl, list)
+    }
+  }
+
+  const withSharing = all.map(p => ({
+    ...p,
+    sharedGa4With: p.ga4PropertyId ? (ga4Groups.get(p.ga4PropertyId) ?? []).filter(s => s !== p.slug) : [],
+    sharedGscWith: p.gscSiteUrl ? (gscGroups.get(p.gscSiteUrl) ?? []).filter(s => s !== p.slug) : [],
+  }))
+
   return {
-    projects: all.filter(p => p.ga4 || p.gsc),
+    projects: withSharing.filter(p => p.ga4 || p.gsc),
     unconfigured: results.filter(p => !p.ga4 && !p.gsc).map(p => p.slug),
     fetchedAt: new Date().toISOString(),
   }
