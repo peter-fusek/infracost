@@ -61,4 +61,16 @@ describe('diffGA4', () => {
     const drifts = diffGA4(config, [])
     expect(drifts).toHaveLength(0)
   })
+
+  it('suppresses unknown drift for known-ignored properties (orphaned-but-documented)', () => {
+    const config = [
+      { slug: 'instarea.com', ga4PropertyId: '530091886', gscSiteUrl: null },
+    ]
+    // 447834242 is the documented-orphaned instarea.com property waiting to be trashed
+    const drifts = diffGA4(config, [
+      upstream({ id: '530091886' }),
+      upstream({ id: '447834242', displayName: 'instarea.com' }),
+    ])
+    expect(drifts).toHaveLength(0)
+  })
 })

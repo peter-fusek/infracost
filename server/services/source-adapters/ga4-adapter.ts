@@ -17,6 +17,16 @@ import { fetchWithRetry } from '../../utils/retry'
 
 const ADMIN_API = 'https://analyticsadmin.googleapis.com/v1beta/accountSummaries'
 
+/**
+ * GA4 property IDs that exist upstream but are intentionally not in ANALYTICS_CONFIG.
+ * Typically orphaned properties waiting to be trashed in the GA4 console — listing
+ * them here suppresses 'unknown' drift alerts without pretending the property is gone.
+ * Values should read like a maintenance note: what is it, why it's not tracked.
+ */
+const GA4_KNOWN_IGNORED: Record<string, string> = {
+  '447834242': 'instarea.com old property (G-XVEQH64N3Q) — replaced by 530091886 which is deployed on both .com and .sk; safe to trash in GA4 console',
+}
+
 interface AccountSummary {
   name?: string
   account?: string
@@ -124,16 +134,16 @@ export function diffGA4(
     }
   }
 
-  // unknown: upstream property that no config entry references
+  // unknown: upstream property that no config entry references (known-ignored excluded)
   for (const prop of upstream) {
-    if (!configByPropertyId.has(prop.id)) {
-      drifts.push({
-        kind: 'unknown',
-        slug: prop.displayName || prop.id,
-        upstreamId: prop.id,
-        details: `GA4 property '${prop.displayName}' (${prop.id}, account ${prop.accountName}) exists upstream but is not referenced by any ANALYTICS_CONFIG entry — add or trash`,
-      })
-    }
+    if (configByPropertyId.has(prop.id)) continue
+    if (GA4_KNOWN_IGNORED[prop.id]) continue
+    drifts.push({
+      kind: 'unknown',
+      slug: prop.displayName || prop.id,
+      upstreamId: prop.id,
+      details: `GA4 property '${prop.displayName}' (${prop.id}, account ${prop.accountName}) exists upstream but is not referenced by any ANALYTICS_CONFIG entry — add or trash`,
+    })
   }
 
   return drifts

@@ -17,6 +17,15 @@ import { fetchWithRetry } from '../../utils/retry'
 
 const GSC_API = 'https://www.googleapis.com/webmasters/v3/sites'
 
+/**
+ * GSC sites that exist upstream but are intentionally not in ANALYTICS_CONFIG.
+ * Keys are the normalised siteUrl. Usually these are orphaned URL-prefix properties
+ * where the sc-domain version is what we actually query.
+ */
+const GSC_KNOWN_IGNORED: Record<string, string> = {
+  'https://www.homegrif.cz': 'URL-prefix variant — queries go through sc-domain:homegrif.cz; URL-prefix property is orphaned, safe to remove',
+}
+
 interface GSCSiteEntry {
   siteUrl?: string
   permissionLevel?: string // siteOwner | siteFullUser | siteRestrictedUser | siteUnverifiedUser
@@ -100,14 +109,15 @@ export function diffGSC(
   }
 
   for (const site of upstream) {
-    if (!configNormalised.has(normaliseGscUrl(site.siteUrl))) {
-      drifts.push({
-        kind: 'unknown',
-        slug: site.siteUrl,
-        upstreamId: site.siteUrl,
-        details: `GSC site '${site.siteUrl}' (${site.permissionLevel}) exists upstream but is not referenced by any ANALYTICS_CONFIG entry — add or remove access`,
-      })
-    }
+    const normalised = normaliseGscUrl(site.siteUrl)
+    if (configNormalised.has(normalised)) continue
+    if (GSC_KNOWN_IGNORED[normalised]) continue
+    drifts.push({
+      kind: 'unknown',
+      slug: site.siteUrl,
+      upstreamId: site.siteUrl,
+      details: `GSC site '${site.siteUrl}' (${site.permissionLevel}) exists upstream but is not referenced by any ANALYTICS_CONFIG entry — add or remove access`,
+    })
   }
 
   return drifts

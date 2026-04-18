@@ -58,10 +58,24 @@ describe('diffGSC', () => {
     const config = [
       { slug: 'homegrif.cz', ga4PropertyId: null, gscSiteUrl: 'sc-domain:homegrif.cz' },
     ]
-    // sites.list returning a URL-prefix for the same domain is genuinely separate drift
+    // With the URL-prefix on the known-ignored list, only the 'missing' side remains.
+    // The sc-domain property exists upstream but sites.list doesn't surface it (auth quirk).
     const drifts = diffGSC(config, [upstream('https://www.homegrif.cz/')])
     expect(drifts.filter(d => d.kind === 'missing')).toHaveLength(1)
-    expect(drifts.filter(d => d.kind === 'unknown')).toHaveLength(1)
+    expect(drifts.filter(d => d.kind === 'unknown')).toHaveLength(0)
+  })
+
+  it('suppresses unknown drift for known-ignored sites', () => {
+    const config = [
+      { slug: 'homegrif.cz', ga4PropertyId: null, gscSiteUrl: 'sc-domain:homegrif.cz' },
+    ]
+    // The URL-prefix https://www.homegrif.cz/ is the intentional orphan.
+    // Adding sc-domain:homegrif.cz as upstream clears the 'missing' side too.
+    const drifts = diffGSC(config, [
+      upstream('sc-domain:homegrif.cz'),
+      upstream('https://www.homegrif.cz/'),
+    ])
+    expect(drifts).toHaveLength(0)
   })
 })
 
