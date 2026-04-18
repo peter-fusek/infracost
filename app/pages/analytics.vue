@@ -27,6 +27,7 @@ interface ProjectAnalytics {
   gscSiteUrl: string | null
   sharedGa4With: string[]
   sharedGscWith: string[]
+  drift: { adapter: string; ageDays: number } | null
   ga4: {
     sessions: number
     users: number
@@ -215,6 +216,16 @@ function toggleTips(slug: string) {
                 >
                   <UIcon name="i-lucide-link-2" class="size-3 mr-0.5" />
                   shares GSC with {{ project.sharedGscWith.join(', ') }}
+                </UBadge>
+                <UBadge
+                  v-if="project.drift"
+                  color="warning"
+                  variant="solid"
+                  size="xs"
+                  :title="`Source-reconciler flagged this config entry's ${project.drift.adapter.toUpperCase()} upstream as missing. Check /alerts or /triage.`"
+                >
+                  <UIcon name="i-lucide-alert-triangle" class="size-3 mr-0.5" />
+                  {{ project.drift.adapter }} drift {{ project.drift.ageDays }}d ago
                 </UBadge>
               </div>
               <!-- SEO Score badge -->

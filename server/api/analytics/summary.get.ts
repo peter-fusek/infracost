@@ -1,8 +1,9 @@
-import { and, eq, isNull } from 'drizzle-orm'
-import { projects } from '../../db/schema'
+import { and, eq, isNull, like, gte } from 'drizzle-orm'
+import { projects, alerts } from '../../db/schema'
 import { ANALYTICS_CONFIG } from '../../utils/analytics-config'
 import { fetchGA4Traffic } from '../../services/analytics-ga4'
 import { fetchGSCPerformance } from '../../services/analytics-gsc'
+import { SOURCE_DRIFT_PREFIX } from '../../services/source-reconciler'
 
 /**
  * Analytics summary — returns overview data for all configured projects.
@@ -91,11 +92,41 @@ export default defineEventHandler(async () => {
     }
   }
 
-  const withSharing = all.map(p => ({
-    ...p,
-    sharedGa4With: p.ga4PropertyId ? (ga4Groups.get(p.ga4PropertyId) ?? []).filter(s => s !== p.slug) : [],
-    sharedGscWith: p.gscSiteUrl ? (gscGroups.get(p.gscSiteUrl) ?? []).filter(s => s !== p.slug) : [],
-  }))
+  // Pending source-reconciler drift per slug — surfaces as a staleness chip on the card.
+  // Only 'missing' alerts matter here (config pointing at nothing upstream); 'unknown'
+  // alerts are about upstream entities that have no card, so they have nowhere to render.
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  const driftRows = await db
+    .select({ alertType: alerts.alertType, createdAt: alerts.createdAt })
+    .from(alerts)
+    .where(and(
+      like(alerts.alertType, `${SOURCE_DRIFT_PREFIX}%_missing_%`),
+      eq(alerts.status, 'pending'),
+      eq(alerts.isActive, true),
+      gte(alerts.createdAt, since),
+    ))
+  const driftBySlug = new Map<string, { adapter: string; ageDays: number }>()
+  for (const row of driftRows) {
+    // alertType format: source_drift_<adapter>_missing_<slug>
+    const parts = row.alertType.slice(SOURCE_DRIFT_PREFIX.length).split('_')
+    const adapter = parts[0]
+    const slug = parts.slice(2).join('_')
+    if (!adapter || !slug) continue
+    const ageDays = Math.floor((Date.now() - row.createdAt.getTime()) / (24 * 60 * 60 * 1000))
+    const prior = driftBySlug.get(slug)
+    // Keep the most recent alert per slug — less misleading than the oldest
+    if (!prior || ageDays < prior.ageDays) driftBySlug.set(slug, { adapter, ageDays })
+  }
+
+  const withSharing = all.map((p) => {
+    const drift = driftBySlug.get(p.slug)
+    return {
+      ...p,
+      sharedGa4With: p.ga4PropertyId ? (ga4Groups.get(p.ga4PropertyId) ?? []).filter(s => s !== p.slug) : [],
+      sharedGscWith: p.gscSiteUrl ? (gscGroups.get(p.gscSiteUrl) ?? []).filter(s => s !== p.slug) : [],
+      drift: drift ? { adapter: drift.adapter, ageDays: drift.ageDays } : null,
+    }
+  })
 
   return {
     projects: withSharing.filter(p => p.ga4 || p.gsc),
