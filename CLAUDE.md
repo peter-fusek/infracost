@@ -158,3 +158,4 @@ Before filing an issue in a non-infracost repo that proposes API/SDK/library cha
 - CVE overrides in package.json: defu, lodash, vite — check periodically if upstream fixed
 - GSC sites.list returns trailing-slash canonical form (`https://x/`) — source-reconciler's `normaliseGscUrl` strips it; sc-domain entries untouched
 - Anything calling Google Analytics Admin API needs `analyticsadmin.googleapis.com` enabled on the GCP project the service account lives in — see #97
+- **Saving mode (v36.02, #105)** — `app_settings.saving_mode` gates the `collect` Nitro task. Fresh deploys default ON (no row → `getSavingMode()` returns `true`). Manual `POST /api/collect/trigger` is intentionally NOT gated — users can still force a one-off run. Single nightly cron is `0 1 * * *` (01:00 UTC). Toggle on `/` dashboard header. Do NOT re-add `source-drift` or `weekly-digest` to `nuxt.config.ts` scheduledTasks without explicit user consent
