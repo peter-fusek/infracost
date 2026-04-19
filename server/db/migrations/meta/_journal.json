@@ -57,6 +57,13 @@
       "when": 1776411948146,
       "tag": "0007_add_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776623674959,
+      "tag": "0008_add_app_settings",
+      "breakpoints": true
     }
   ]
 }

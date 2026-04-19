@@ -22,6 +22,7 @@ import { checkVerificationAlerts } from '../services/verification-alerts'
 import { reconcileAll, persistReconciliationRun } from '../services/reconciliation'
 import { ingestTursoInvoices } from '../services/turso-invoice-ingest'
 import { checkInvariants } from '../services/invariant-checks'
+import { getSavingMode } from '../utils/app-settings'
 
 export default defineTask({
   meta: {
@@ -29,6 +30,11 @@ export default defineTask({
     description: 'Collect costs from all API-enabled platforms',
   },
   async run() {
+    if (await getSavingMode()) {
+      console.log('[collect] saving mode ON — skipping scheduled run')
+      return { result: 'skipped:saving_mode' as const }
+    }
+
     const db = useDB()
     const config = useRuntimeConfig()
     const { start, end } = getCurrentMonthRange()

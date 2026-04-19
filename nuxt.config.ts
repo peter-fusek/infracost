@@ -48,13 +48,11 @@ export default defineNuxtConfig({
       },
     },
     scheduledTasks: {
-      // Source reconciliation runs before collect so drift is surfaced
-      // independently of whether any collector errors out (#94).
-      '30 5 * * *': ['source-drift'],
-      // Run cost collection daily at 06:00 UTC
-      '0 6 * * *': ['collect'],
-      // Weekly cost digest email — Mondays at 07:00 UTC
-      '0 7 * * 1': ['weekly-digest'],
+      // Saving mode (v36.02): single nightly entry at 01:00 UTC ≈ 03:00 CEE summer.
+      // Task early-returns when app_settings.saving_mode=true (default on fresh deploy).
+      // source-drift and weekly-digest are intentionally not scheduled — re-add here
+      // after flipping off saving mode and confirming spend is in line.
+      '0 1 * * *': ['collect'],
     },
   },
   runtimeConfig: {

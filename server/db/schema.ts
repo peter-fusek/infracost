@@ -260,6 +260,17 @@ export const creditBalances = pgTable('credit_balances', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// --- App Settings ---
+// Key/value singleton table for runtime flags. Introduced for saving_mode (v36.02):
+// when saving_mode=true, the collect task short-circuits and no autonomous
+// external API calls run. Toggled from the dashboard.
+
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 // --- Collection Runs ---
 
 export const collectionRuns = pgTable('collection_runs', {

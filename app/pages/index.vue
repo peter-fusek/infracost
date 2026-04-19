@@ -85,6 +85,21 @@ const { data: alertsResponse, refresh: refreshAlerts } = await useFetch<{ alerts
 const activeAlerts = computed(() => alertsResponse.value?.alerts ?? [])
 const { data: collectionStatus } = await useFetch<{ lastCollectedAt: string | null }>('/api/collection-status', { lazy: true })
 
+// Saving mode: when ON, the scheduled collect task short-circuits.
+// Manual trigger button still works so users can force a run.
+const { data: savingMode, refresh: refreshSavingMode } = await useFetch<{ on: boolean }>('/api/settings/saving-mode', { lazy: true })
+const toggling = ref(false)
+async function toggleSavingMode() {
+  if (!savingMode.value) return
+  toggling.value = true
+  try {
+    await $fetch('/api/settings/saving-mode', { method: 'PATCH', body: { on: !savingMode.value.on } })
+    await refreshSavingMode()
+  } finally {
+    toggling.value = false
+  }
+}
+
 // Analytics summary (lazy — dashboard doesn't block on it)
 interface AnalyticsSummaryProject {
   slug: string
@@ -279,13 +294,38 @@ const platforms = [
     <template v-if="loggedIn">
       <div class="h-px bg-gradient-to-r from-transparent via-[var(--ui-border)] to-transparent" />
 
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-4">
         <div>
           <h2 class="font-display text-2xl font-black tracking-tight">Infrastructure Costs</h2>
           <p class="mt-1 text-sm text-[var(--ui-text-muted)]">
             {{ new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }}
             &middot; Day {{ mtd?.currentDay || 0 }} of {{ mtd?.daysInMonth || 31 }}
             &middot; 1 USD = {{ mtd?.eurUsdRate ?? 0.87 }} EUR
+          </p>
+        </div>
+        <div v-if="savingMode" class="flex items-center gap-2 shrink-0">
+          <span class="text-xs font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">
+            Saving Mode
+          </span>
+          <USwitch
+            :model-value="savingMode.on"
+            :loading="toggling"
+            :disabled="toggling"
+            :color="savingMode.on ? 'warning' : 'success'"
+            @update:model-value="toggleSavingMode"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="savingMode?.on"
+        class="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3"
+      >
+        <UIcon name="i-lucide-moon" class="size-5 shrink-0 text-amber-500" />
+        <div class="min-w-0 text-sm">
+          <p class="font-semibold">Saving mode is ON — autonomous runs paused.</p>
+          <p class="mt-0.5 text-[var(--ui-text-muted)]">
+            The nightly collect job short-circuits; no external API calls fire. Toggle off above to resume, or click "Collect Now" for a one-off manual run.
           </p>
         </div>
       </div>
